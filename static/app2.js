@@ -838,13 +838,12 @@ async function renderSubjects() {
 
   box.innerHTML = shown.map((g) => {
     const sname = g.sem ? g.sem.name : "未分学期";
-    const shortName = g.sem ? sname.replace(/\d{4}年/, "") : "未分";
     const totalCredit = g.subs.reduce((a, s) => a + (Number(s.credit) || 0), 0).toFixed(1);
     return `<div class="subject-group" data-sem="${g.sem ? g.sem.id : ""}">
       <div class="subject-group-head" onclick="toggleSubjectGroup(this)"
         title="${escapeHtml(sname)}：${g.subs.length} 门 · 合计 ${totalCredit} 学分 —— 点击展开/收起，组内可拖拽排序">
         <span class="sg-arrow">▸</span>
-        <b>${escapeHtml(shortName)}</b>
+        <b>${escapeHtml(sname)}</b>
         <span class="sg-meta">${g.subs.length}科 · ${totalCredit}分</span>
       </div>
       <div class="subject-group-body" style="display:none">
