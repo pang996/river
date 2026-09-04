@@ -123,8 +123,7 @@ async function loadOverview() {
   state.overview = await api("/api/overview");
   state.currentSemesterId = state.overview.current_semester?.id || null;
   state.currentWeek = state.overview.today_week || 1;
-  $("#db-badge").textContent =
-    `数据库 ${state.overview.db_file} · ${state.overview.courses}课 ${state.overview.events}事件`;
+  $("#db-badge").textContent = `数据库 ${(state.overview.db_size / 1024).toFixed(0)}KB`;
 }
 
 async function loadSemesters() {
@@ -540,6 +539,35 @@ async function renderData() {
   renderSettings();
 }
 
+/* ---------- 数据概览：成就页勋章墙上方统计条 ---------- */
+function renderGradStats() {
+  const o = state.overview;
+  if (!o) return;
+  $("#grad-stat-grid").innerHTML = `
+    <div class="stat"><div class="n">${o.courses}</div><div class="l">课程</div></div>
+    <div class="stat"><div class="n">${o.events}</div><div class="l">事件日程</div></div>
+    <div class="stat"><div class="n">${o.subjects}</div><div class="l">科目</div></div>
+    <div class="stat"><div class="n">${o.semesters}</div><div class="l">学期</div></div>
+    <div class="stat"><div class="n">${o.today_week}</div><div class="l">当前第几周</div></div>
+    <div class="stat"><div class="n">${(o.db_size / 1024).toFixed(0)}KB</div><div class="l">数据库大小</div></div>`;
+}
+
+/* ---------- 数据概览：课程页学期管理后缩小图标 ---------- */
+function renderCourseMiniStats() {
+  const o = state.overview;
+  if (!o) return;
+  const items = [
+    ["📘", o.courses, "课程"],
+    ["🗓", o.events, "事件"],
+    ["📚", o.subjects, "科目"],
+    ["📅", o.semesters, "学期"],
+    ["📈", o.today_week, "当前周"],
+    ["💾", (o.db_size / 1024).toFixed(0) + "KB", "数据库"],
+  ];
+  $("#course-mini-stats").innerHTML = items.map(([ic, n, l]) =>
+    `<span class="mini-stat"><i>${ic}</i><b>${n}</b>${l}</span>`).join("");
+}
+
 /* ---------- 毕业要求独立页 ---------- */
 const GRAD_COLORS = ["#3b6ef6", "#21a179", "#f59e0b", "#8b5cf6", "#ef4444", "#14b8a6"];
 const CATEGORY_COLORS = {
@@ -665,6 +693,7 @@ async function renderGradPage() {
     api("/api/grad_requirements"),
     api("/api/grad_progress").catch(() => null),
   ]);
+  renderGradStats();
   renderMedals();
   renderSubjectMedals();
   const credits = reqs.filter((r) => r.kind !== "completion");
@@ -738,7 +767,7 @@ async function renderGradPage() {
     </div>`;
   }).join("")}</div>`;
 
-  // 3) 达标项——一行3个紧凑标签
+  // 3) 达标项——一行多标签
   $("#grad-completion").innerHTML = completions.length ? `<div class="grad-chip-grid">${completions.map((r) => {
     const done = !!r.done;
     return `<div class="grad-chip chip-task">
@@ -747,9 +776,10 @@ async function renderGradPage() {
         <b>${escapeHtml(r.category)}</b>
         <span class="chip-state ${done ? "chip-ok" : ""}">${done ? "已达标" : "未完成"}</span>
         <button class="btn-sm ${done ? "" : "btn-primary"}" onclick="toggleGradDone(${r.id}, ${done ? 1 : 0})">${done ? "取消" : "标记完成"}</button>
+        <button class="btn-sm btn-danger" onclick="deleteCompletion(${r.id})" title="删除达标项">✕</button>
       </div>
     </div>`;
-  }).join("")}</div>` : '<div class="empty">暂无达标项</div>';
+  }).join("")}</div>` : '<div class="empty">暂无达标项，点右上角"新增达标项"添加</div>';
 }
 
 async function toggleGradDone(gid, currentDone) {
@@ -759,6 +789,30 @@ async function toggleGradDone(gid, currentDone) {
     body: JSON.stringify({ done: currentDone ? 0 : 1 }),
   });
   renderGradPage();
+}
+
+/* ---------- 达标项录入（弹出式） ---------- */
+function openCompletionModal() {
+  $("#c-name").value = "";
+  $("#c-note").value = "";
+  $("#completion-modal").classList.add("show");
+}
+
+async function saveCompletion() {
+  const name = $("#c-name").value.trim();
+  if (!name) { alert("请填写达标项名称"); return; }
+  await api("/api/grad_requirements", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ category: name, kind: "completion", note: $("#c-note").value.trim() }),
+  });
+  $("#completion-modal").classList.remove("show");
+  renderGradPage();
+}
+
+function deleteCompletion(gid) {
+  if (!confirm("确定删除该达标项？")) return;
+  api(`/api/grad_requirements/${gid}`, { method: "DELETE" }).then(() => renderGradPage());
 }
 
 /* ---------- 科目管理（按学期折叠分组 + 拖拽排序） ---------- */
@@ -1230,7 +1284,7 @@ document.querySelectorAll("nav button").forEach((btn) => {
     ["schedule", "courses", "events", "grad", "data"].forEach((t) =>
       $(`#tab-${t}`).classList.toggle("hidden", t !== btn.dataset.tab));
     if (btn.dataset.tab === "schedule") { renderSchedule(); if (state.viewMode === "month") renderMonthView(); }
-    if (btn.dataset.tab === "courses") { renderSemesters(); renderSubjects(); }
+    if (btn.dataset.tab === "courses") { renderSemesters(); renderSubjects(); renderCourseMiniStats(); }
     if (btn.dataset.tab === "events") { renderEvents(); renderHolidays(); }
     if (btn.dataset.tab === "grad") renderGradPage();
     if (btn.dataset.tab === "data") renderData();
@@ -1294,6 +1348,8 @@ $("#btn-g-cancel").onclick = () => $("#grade-modal").classList.remove("show");
 $("#btn-g-save").onclick = saveGradeFromSubject;
 $("#btn-g-clear").onclick = clearGradeFromSubject;
 $("#g-score").oninput = updateGradePreview;
+$("#btn-c-cancel").onclick = () => $("#completion-modal").classList.remove("show");
+$("#btn-c-save").onclick = saveCompletion;
 $("#btn-add-semester").onclick = () => openSemesterModal(null);
 $("#btn-semester-cancel").onclick = () => $("#semester-modal").classList.remove("show");
 $("#btn-semester-save").onclick = saveSemester;

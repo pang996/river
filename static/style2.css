@@ -159,6 +159,15 @@ table.schedule td.period-label { width: 60px; color: var(--muted); font-size: 11
 .stat:nth-child(6) { background: linear-gradient(135deg, #f43f5e, #fb7185); }
 .stat .n { font-size: 25px; font-weight: 700; line-height: 1.2; position: relative; }
 .stat .l { font-size: 12px; opacity: .9; margin-top: 3px; position: relative; }
+/* 课程页学期管理后缩小统计图标 */
+.mini-stats { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 14px; }
+.mini-stat {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 9px; background: #fff; border: 1px solid var(--line); border-radius: 20px;
+  font-size: 11.5px; color: var(--muted);
+}
+.mini-stat i { font-style: normal; font-size: 13px; }
+.mini-stat b { color: #1a1b1c; font-weight: 700; }
 
 /* ===== 数据表 ===== */
 table.data { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }

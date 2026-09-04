@@ -27,7 +27,7 @@
     <button data-tab="schedule" class="active">课表</button>
     <button data-tab="courses">课程</button>
     <button data-tab="events">事件</button>
-    <button data-tab="grad">毕业</button>
+    <button data-tab="grad">成就</button>
     <button data-tab="data">数据</button>
   </nav>
   <div class="user-area">
@@ -95,6 +95,8 @@
       <div class="semester-grid" id="semester-grid"></div>
     </div>
 
+    <div class="mini-stats" id="course-mini-stats"></div>
+
     <h2 class="section-divider">数据维护</h2>
 
     <div class="card">
@@ -147,17 +149,6 @@
   <section id="tab-grad" class="hidden">
     <div class="card">
       <div class="card-head">
-        <h3>🏅 勋章墙</h3>
-        <span class="muted" id="medal-summary">已获得 0 / 7</span>
-      </div>
-      <div class="medal-section-title">毕业要求勋章</div>
-      <div class="medal-wall" id="medal-wall"></div>
-      <div class="medal-section-title">课程科目勋章 <span class="muted" id="subject-medal-summary" style="font-size:11px">按成绩点亮</span></div>
-      <div class="medal-wall" id="subject-medal-wall"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-head">
         <h3>总学分达成度</h3>
         <span class="muted">四类学分合并统计</span>
       </div>
@@ -176,8 +167,25 @@
       <div class="card-head">
         <h3>达标项</h3>
         <span class="muted">英语四六级 / 普通话等级</span>
+        <button class="btn-primary btn-sm" onclick="openCompletionModal()">+ 新增达标项</button>
       </div>
       <div id="grad-completion"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>数据概览</h3><span class="muted">课程 / 事件 / 科目 / 学期 / 周数 / 数据库</span></div>
+      <div class="stat-grid" id="grad-stat-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>🏅 勋章墙</h3>
+        <span class="muted" id="medal-summary">已获得 0 / 7</span>
+      </div>
+      <div class="medal-section-title">毕业要求勋章</div>
+      <div class="medal-wall" id="medal-wall"></div>
+      <div class="medal-section-title">课程科目勋章 <span class="muted" id="subject-medal-summary" style="font-size:11px">按成绩点亮</span></div>
+      <div class="medal-wall" id="subject-medal-wall"></div>
     </div>
   </section>
 
@@ -342,6 +350,21 @@
       <button class="btn-danger hidden" id="btn-g-clear">清除成绩</button>
       <button id="btn-g-cancel">取消</button>
       <button class="btn-primary" id="btn-g-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 新增达标项弹窗 ===== -->
+<div class="modal-mask" id="completion-modal">
+  <div class="modal modal-sm">
+    <h3>新增达标项</h3>
+    <div class="form-grid">
+      <div class="full"><label>达标项名称 *</label><input id="c-name" placeholder="如 计算机二级 / 四六级 / 普通话等级"></div>
+      <div class="full"><label>备注（可选）</label><input id="c-note" placeholder="补充说明，如 425分以上 / 二级甲等"></div>
+    </div>
+    <div class="actions">
+      <button id="btn-c-cancel">取消</button>
+      <button class="btn-primary" id="btn-c-save">保存</button>
     </div>
   </div>
 </div>
