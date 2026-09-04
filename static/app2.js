@@ -300,13 +300,14 @@ function semesterGPA(sid, courses, grades) {
 }
 
 async function renderSemesters() {
-  const [semesters, courses, grades] = await Promise.all([
-    api("/api/semesters"), api("/api/courses"), api("/api/grades"),
+  const [semesters, courses, subjects, grades] = await Promise.all([
+    api("/api/semesters"), api("/api/courses"), api("/api/subjects"), api("/api/grades"),
   ]);
   const st = $("#semester-grid");
   if (!semesters.length) { st.innerHTML = '<div class="empty">暂无学期，点击"新增学期"创建</div>'; return; }
   st.innerHTML = semesters.map((s) => {
     const cnt = courses.filter((c) => c.semester_id === s.id).length;
+    const subCnt = subjects.filter((x) => x.semester_id === s.id).length;
     const g = semesterGPA(s.id, courses, grades);
     return `<div class="sem-card ${s.is_current ? "current" : ""}" draggable="true" data-id="${s.id}"
       ondragstart="dragSemStart(event, ${s.id})" ondragover="dragSemOver(event)" ondragend="dragSemEnd(event, ${s.id})">
@@ -318,7 +319,7 @@ async function renderSemesters() {
       <div class="sem-card-body">
         <div>开始 ${escapeHtml(s.start_date)} · 绩点制 ${escapeHtml(s.scale || "4.0")}</div>
         <div class="sem-gpa">综合绩点：${g.gpa !== null ? `<b>${g.gpa.toFixed(2)}</b>` : `<span class="muted">暂无成绩</span>`}${g.count ? `<span class="muted">（${g.count} 门有成绩）</span>` : ""}</div>
-        <div>${cnt} 门课程</div>
+        <div>${subCnt} 个科目${cnt ? ` · ${cnt} 门排课` : ""}</div>
       </div>
       <div class="sem-card-ops">
         <button class="btn-sm" onclick="openSemesterDetail(${s.id})">进入</button>
