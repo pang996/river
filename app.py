@@ -579,6 +579,19 @@ def api_subjects():
     return jsonify(rows_to_list(rows))
 
 
+@app.route("/api/badges")
+def api_badges():
+    """课程徽章列表（玻璃拟态 PNG），含科目关联信息"""
+    db = get_db()
+    rows = db.execute(
+        "SELECT b.id, b.name, b.filename, b.subject_id, b.sort_order, "
+        "s.name AS subject_name "
+        "FROM badge b LEFT JOIN subject s ON b.subject_id=s.id "
+        "ORDER BY b.sort_order, b.id"
+    ).fetchall()
+    return jsonify(rows_to_list(rows))
+
+
 @app.route("/api/subjects", methods=["POST"])
 def api_subject_create():
     db = get_db()

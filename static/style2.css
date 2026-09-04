@@ -292,6 +292,21 @@ table.data tr:last-child td { border-bottom: none; }
   font-size: 10px; border: 1px solid; border-radius: 10px;
 }
 
+/* ===== 科目勋章墙：玻璃拟态 PNG 徽章 + 绩点星数 ===== */
+.badge-img {
+  width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+  display: block; margin: 0 auto; border: 2px solid #fff;
+}
+.medal.locked .badge-img { filter: grayscale(1); opacity: .55; }
+.medal .badge-glow { border-radius: 50%; display: inline-block; padding: 3px; }
+.gpa-stars { display: flex; gap: 2px; justify-content: center; align-items: center; margin-top: 6px; min-height: 14px; }
+.gpa-star { width: 13px; height: 13px; flex: 0 0 auto; }
+.gpa-stars .gpa-empty { font-size: 10px; color: var(--muted); }
+.medal-tier-badge {
+  display: inline-block; margin-top: 5px; padding: 1px 8px;
+  font-size: 10px; font-weight: 700; border-radius: 10px; color: #fff;
+}
+
 /* ===== 其他 ===== */
 .muted { color: var(--muted); font-size: 12px; }
 .hidden { display: none !important; }

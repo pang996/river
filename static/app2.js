@@ -28,6 +28,7 @@ async function checkAuth() {
     if (r.ok) {
       const d = await r.json();
       setUser(d.username || "");
+      hideLogin();
       return true;
     }
     showLogin();
@@ -640,27 +641,55 @@ function subjectTitle(score) {
   return SUBJECT_TITLES.find((t) => n >= t.min) || SUBJECT_TITLES[SUBJECT_TITLES.length - 1];
 }
 
+/* ---------- 绩点档位：按绩点给徽章上色 + 星数 ---------- */
+const GPA_TIERS = [
+  { min: 5, label: "S", color: "#8b5cf6", stars: 5 }, // 绩点5 → 紫，5星
+  { min: 4, label: "A", color: "#f5b301", stars: 4 }, // 4-5 → 金，4星
+  { min: 3, label: "B", color: "#ef4444", stars: 3 }, // 3-4 → 红，3星
+  { min: 2, label: "C", color: "#f97316", stars: 2 }, // 2-3 → 橙，2星
+  { min: 1, label: "D", color: "#ec4899", stars: 1 }, // 1-2 → 粉，1星
+  { min: 0, label: "F", color: "#f1f5f9", stars: 0 }, // 0-1 → 白，0星
+];
+function gpaTier(score) {
+  const p = gpaPoint(score);
+  return GPA_TIERS.find((t) => p >= t.min) || GPA_TIERS[GPA_TIERS.length - 1];
+}
+/* 渲染一排同色五角星（SVG，颜色跟随绩点档位） */
+function starRow(tier) {
+  if (!tier || tier.stars <= 0) return '<div class="gpa-stars"><span class="gpa-empty">——</span></div>';
+  const star = '<svg class="gpa-star" viewBox="0 0 24 24" fill="' + tier.color + '"><path d="M12 2l2.86 6.1 6.64.62-4.98 4.47 1.45 6.52L12 16.83 6.03 19.7l1.45-6.52-4.98-4.47 6.64-.62z"/></svg>';
+  let s = "";
+  for (let i = 0; i < tier.stars; i++) s += star;
+  return '<div class="gpa-stars">' + s + '</div>';
+}
+
 async function renderSubjectMedals() {
-  const [subjects, grades] = await Promise.all([api("/api/subjects"), api("/api/grades")]);
+  const [subjects, grades, badges] = await Promise.all([api("/api/subjects"), api("/api/grades"), api("/api/badges")]);
   const wall = $("#subject-medal-wall");
   const earnedCount = grades.length;
   $("#subject-medal-summary").textContent = `已点亮 ${earnedCount} / ${subjects.length} 门`;
   if (!subjects.length) { wall.innerHTML = '<div class="empty">暂无科目</div>'; return; }
-  // 全部科目勋章卡片（勋章墙风格）：按培养类别着色，有成绩点亮+称号，无成绩锁定
+  const badgeBySubject = {};
+  (badges || []).forEach((b) => { if (b.subject_id) badgeBySubject[b.subject_id] = b; });
+  // 全部科目勋章卡片：玻璃拟态 PNG + 有成绩点亮（绩点颜色修饰+星数），无成绩锁定
   wall.innerHTML = subjects.map((s) => {
     const g = grades.find((x) => x.subject_id === s.id);
-    const t = g ? subjectTitle(g.score) : null;
     const earned = !!g;
+    const tier = earned ? gpaTier(g.score) : null;
     const color = s.grad_category ? catColor(s.grad_category) : "#94a3b8";
+    const bd = badgeBySubject[s.id];
+    const imgSrc = bd ? ("badges/" + encodeURIComponent(bd.filename)) : (s.medal_img || null);
     const short = s.name.length > 5 ? s.name.slice(0, 5) + "…" : s.name;
-    return `<div class="medal ${earned ? "earned" : "locked"}" style="border-color:${color}66" title="${escapeHtml(s.name)}">
-      <div class="medal-icon" style="background:${color}1a;border-radius:10px;padding:3px">
-        ${s.medal_img ? `<img class="medal-img" src="${s.medal_img}" alt="勋章">` : (t ? t.icon : "🎓")}
+    const glow = tier ? `box-shadow:0 0 16px ${tier.color}99, 0 4px 14px rgba(0,0,0,.12); border:3px solid ${tier.color}` : "";
+    return `<div class="medal ${earned ? "earned" : "locked"}" style="border-color:${tier ? tier.color + "66" : color + "66"}" title="${escapeHtml(s.name)}">
+      <div class="medal-icon">
+        ${imgSrc ? `<span class="badge-glow" style="${glow}"><img class="badge-img" src="${imgSrc}" alt="勋章"></span>` : (tier ? starRow(tier) : "🎓")}
       </div>
       <div class="medal-name">${escapeHtml(short)}</div>
       <div class="medal-desc">${s.grad_category ? escapeHtml(s.grad_category) : ""}${s.credit ? ` · ${s.credit}学分` : ""}</div>
-      <div class="medal-state">${earned && t ? `${t.title} · ${Number(g.score)}分` : "未获得"}</div>
-      ${earned ? `<div class="medal-cat" style="color:${color};border-color:${color}55">✦ 已点亮</div>` : ""}
+      ${earned && tier ? `<div class="medal-tier-badge" style="background:${tier.color}">${tier.label} 绩点 ${gpaPoint(g.score).toFixed(1)}</div>` : ""}
+      ${earned ? starRow(tier) : `<div class="gpa-stars"><span class="gpa-empty">未点亮</span></div>`}
+      <div class="medal-state" style="color:${tier ? tier.color : ""}">${earned ? `${Number(g.score)}分` : "未获得"}</div>
     </div>`;
   }).join("");
 }
