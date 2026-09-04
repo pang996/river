@@ -380,31 +380,21 @@ function backToSemesters() {
 
 /* 学期详情：该学期课程 + 成绩合并表 */
 async function renderSemesterDetail(sid) {
-  const [courses, grades] = await Promise.all([
-    api(`/api/courses?semester_id=${sid}`), api("/api/grades"),
-  ]);
+  const courses = await api(`/api/courses?semester_id=${sid}`);
   $("#detail-course-count").textContent = `共 ${courses.length} 门课`;
   const t = $("#detail-course-table");
   if (!courses.length) {
-    t.innerHTML = '<tr><td class="empty" colspan="7">该学期暂无课程，点右上角"新建课程"添加</td></tr>';
+    t.innerHTML = '<tr><td class="empty" colspan="6">该学期暂无课程，点右上角"新建课程"添加</td></tr>';
     return;
   }
-  t.innerHTML = "<tr><th>课程</th><th>周次</th><th>时间</th><th>地点</th><th>学分</th><th>成绩</th><th>操作</th></tr>" +
+  t.innerHTML = "<tr><th>课程</th><th>周次</th><th>时间</th><th>地点</th><th>学分</th><th>操作</th></tr>" +
     courses.map((c) => {
-      const g = c.subject_id ? grades.find((x) => x.subject_id === c.subject_id) : null;
       return `<tr>
         <td><b>${escapeHtml(c.name)}</b>${c.subject_name ? `<div class="muted">${escapeHtml(c.subject_name)}</div>` : ""}</td>
         <td>第${escapeHtml(c.weeks)}周</td>
         <td>${DAYS[c.day_of_week - 1]} 第${c.period_start}~${c.period_end}节</td>
         <td>${escapeHtml(c.location || "—")}</td>
         <td>${c.credit}</td>
-        <td>${c.subject_id ? `
-          <div style="display:flex;gap:4px;align-items:center">
-            <input id="g-${c.id}" type="number" step="0.5" style="width:60px" value="${g ? g.score : ""}" placeholder="分数">
-            <button class="btn-sm" onclick="saveGradeFromTable(${c.id})">保存</button>
-            ${g ? `<button class="btn-danger btn-sm" onclick="deleteGradeFromTable(${c.id}, ${g.id})">清除</button>` : ""}
-          </div>` : `<span class="muted">未关联科目</span>`}
-        </td>
         <td>
           <button class="btn-sm" onclick="openMemoModal(${c.id})">备忘</button>
           <button class="btn-sm" onclick="openCourseModal(${c.id}, ${sid})">编辑</button>
@@ -515,31 +505,6 @@ async function saveHoliday() {
 function deleteHoliday(hdate) {
   if (!confirm("确定删除该假期？")) return;
   api(`/api/holidays/${encodeURIComponent(hdate)}`, { method: "DELETE" }).then(() => renderHolidays());
-}
-
-async function saveGradeFromTable(courseId) {
-  const score = $(`#g-${courseId}`).value.trim();
-  if (!score || isNaN(Number(score))) { alert("请填写有效成绩"); return; }
-  const courses = await api(`/api/courses?semester_id=${detailSemesterId}`);
-  const c = courses.find((x) => x.id === courseId);
-  if (!c || !c.subject_id) { alert("该课程未关联科目，无法录成绩"); return; }
-  await api("/api/grades", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ subject_id: c.subject_id, score: Number(score) }),
-  });
-  renderSemesterDetail(detailSemesterId);
-  renderGradPage();
-  loadOverview();
-}
-
-function deleteGradeFromTable(courseId, gid) {
-  if (!confirm("确定清除该成绩？")) return;
-  api(`/api/grades/${gid}`, { method: "DELETE" }).then(() => {
-    renderSemesterDetail(detailSemesterId);
-    renderGradPage();
-    loadOverview();
-  });
 }
 
 function refreshCourseView() {
