@@ -378,30 +378,92 @@ function backToSemesters() {
   renderSubjects();
 }
 
-/* 学期详情：该学期课程 + 成绩合并表 */
+/* 学期详情：该学期排课（相同科目合并展示，课程=科目子表） */
 async function renderSemesterDetail(sid) {
   const courses = await api(`/api/courses?semester_id=${sid}`);
-  $("#detail-course-count").textContent = `共 ${courses.length} 门课`;
+  $("#detail-course-count").textContent = `共 ${courses.length} 条排课`;
   const t = $("#detail-course-table");
   if (!courses.length) {
-    t.innerHTML = '<tr><td class="empty" colspan="6">该学期暂无课程，点右上角"新建课程"添加</td></tr>';
+    t.innerHTML = '<tr><td class="empty" colspan="4">该学期暂无排课，点右上角"添加排课"</td></tr>';
     return;
   }
-  t.innerHTML = "<tr><th>课程</th><th>周次</th><th>时间</th><th>地点</th><th>学分</th><th>操作</th></tr>" +
-    courses.map((c) => {
-      return `<tr>
-        <td><b>${escapeHtml(c.name)}</b>${c.subject_name ? `<div class="muted">${escapeHtml(c.subject_name)}</div>` : ""}</td>
-        <td>第${escapeHtml(c.weeks)}周</td>
-        <td>${DAYS[c.day_of_week - 1]} 第${c.period_start}~${c.period_end}节</td>
-        <td>${escapeHtml(c.location || "—")}</td>
-        <td>${c.credit}</td>
-        <td>
-          <button class="btn-sm" onclick="openMemoModal(${c.id})">备忘</button>
-          <button class="btn-sm" onclick="openCourseModal(${c.id}, ${sid})">编辑</button>
-          <button class="btn-danger btn-sm" onclick="deleteCourse(${c.id})">删除</button>
-        </td>
-      </tr>`;
-    }).join("");
+  // 按科目分组：同一科目多条排课合并为一行
+  const groups = new Map();
+  const singles = [];
+  for (const c of courses) {
+    if (c.subject_id) {
+      if (!groups.has(c.subject_id)) {
+        groups.set(c.subject_id, { subject_id: c.subject_id, name: c.subject_name || c.name, credit: c.credit, courses: [] });
+      }
+      groups.get(c.subject_id).courses.push(c);
+    } else {
+      singles.push(c);
+    }
+  }
+  const slot = (c) => `第${escapeHtml(c.weeks)}周 ${DAYS[c.day_of_week - 1]} 第${c.period_start}~${c.period_end}节${c.location ? ` · ${escapeHtml(c.location)}` : ""}`;
+  const escJs = (s) => String(s).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+  let html = "<tr><th>课程</th><th>排课时段</th><th>学分</th><th>操作</th></tr>";
+  for (const g of groups.values()) {
+    const slots = g.courses.map(slot).join('<span class="slot-sep">｜</span>');
+    const nameJs = escJs(g.name);
+    html += `<tr>
+      <td><b>${escapeHtml(g.name)}</b><div class="muted">${g.courses.length} 个时段</div></td>
+      <td>${slots}</td>
+      <td>${g.credit}</td>
+      <td class="ops">
+        <button class="btn-sm" onclick="openCourseGroupModal(${sid}, ${g.subject_id}, '${nameJs}')">排课</button>
+        <button class="btn-sm" onclick="openMemoModal(${g.courses[0].id})">备忘</button>
+        <button class="btn-danger btn-sm" onclick="deleteSubjectCourses(${g.subject_id}, '${nameJs}')">删除科目</button>
+      </td>
+    </tr>`;
+  }
+  for (const c of singles) {
+    html += `<tr>
+      <td><b>${escapeHtml(c.name)}</b><div class="muted">未关联科目</div></td>
+      <td>${slot(c)}</td>
+      <td>${c.credit}</td>
+      <td class="ops">
+        <button class="btn-sm" onclick="openMemoModal(${c.id})">备忘</button>
+        <button class="btn-sm" onclick="openCourseModal(${c.id}, ${sid})">编辑</button>
+        <button class="btn-danger btn-sm" onclick="deleteCourse(${c.id})">删除</button>
+      </td>
+    </tr>`;
+  }
+  t.innerHTML = html;
+}
+
+/* 删除某科目在本学期的全部排课（连同科目一起清理排课子表） */
+async function deleteSubjectCourses(subjectId, name) {
+  if (!confirm(`确定删除「${name}」在本学期的全部排课？`)) return;
+  const courses = await api(`/api/courses?semester_id=${detailSemesterId}`);
+  const targets = courses.filter((c) => c.subject_id === subjectId);
+  for (const c of targets) await api(`/api/courses/${c.id}`, { method: "DELETE" });
+  renderSemesterDetail(detailSemesterId);
+}
+
+/* 科目排课管理弹窗：列出该科目所有排课（子表），可逐条编辑/删除、新增时段 */
+let cgSubjectId = null;
+async function openCourseGroupModal(sid, subjectId, name) {
+  cgSubjectId = subjectId;
+  $("#cg-title").textContent = `排课管理 · ${name}`;
+  $("#cg-sub").textContent = `科目：${name}（该科目下的所有排课时段）`;
+  await renderCourseGroup(sid);
+  $("#course-group-modal").classList.add("show");
+}
+
+async function renderCourseGroup(sid) {
+  const courses = await api(`/api/courses?semester_id=${sid}`);
+  const list = courses.filter((c) => c.subject_id === cgSubjectId);
+  const box = $("#cg-list");
+  if (!list.length) { box.innerHTML = '<div class="empty">该科目暂无排课，点"新增时段"添加</div>'; return; }
+  box.innerHTML = list.map((c) => `
+    <div class="cg-item">
+      <div class="cg-slot">第${escapeHtml(c.weeks)}周 ${DAYS[c.day_of_week - 1]} 第${c.period_start}~${c.period_end}节${c.location ? ` · ${escapeHtml(c.location)}` : ""}</div>
+      <div class="cg-ops">
+        <button class="btn-sm" onclick="openCourseModal(${c.id}, ${sid})">编辑</button>
+        <button class="btn-danger btn-sm" onclick="deleteCourse(${c.id})">删除</button>
+      </div>
+    </div>`).join("");
 }
 
 /* ---------- 课程备忘（memo 表） ---------- */
@@ -995,21 +1057,27 @@ let editingCourseId = null;
 
 async function loadSubjects() {
   state.subjects = await api("/api/subjects");
-  const sel = $("#f-subject");
-  sel.innerHTML = '<option value="">（无）</option>' +
-    state.subjects.map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("");
 }
 
-function openCourseModal(cid, defaultSemesterId) {
+/* 科目下拉：只显示指定学期的科目（科目名即课程名） */
+function fillSubjectOptions(semesterId, selectedId) {
+  const sel = $("#f-subject");
+  const opts = state.subjects.filter((s) => String(s.semester_id) === String(semesterId));
+  sel.innerHTML = opts.length
+    ? opts.map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("")
+    : '<option value="">（该学期暂无科目，请先新增科目）</option>';
+  if (selectedId) sel.value = String(selectedId);
+}
+
+function openCourseModal(cid, defaultSemesterId, preselectSubjectId) {
   editingCourseId = cid;
-  $("#course-modal-title").textContent = cid ? "编辑课程" : "新建课程";
+  $("#course-modal-title").textContent = cid ? "编辑排课" : "添加排课";
   if (cid) {
     api(`/api/courses`).then((all) => {
       const c = all.find((x) => x.id === cid);
       if (!c) return;
-      $("#f-name").value = c.name;
       $("#f-semester").value = c.semester_id;
-      $("#f-subject").value = c.subject_id || "";
+      fillSubjectOptions(c.semester_id, c.subject_id || undefined);
       $("#f-location").value = c.location || "";
       $("#f-day").value = c.day_of_week;
       $("#f-weeks").value = c.weeks;
@@ -1021,20 +1089,26 @@ function openCourseModal(cid, defaultSemesterId) {
       $("#f-memo").value = c.memo || "";
     });
   } else {
-    $("#f-name").value = ""; $("#f-subject").value = ""; $("#f-location").value = "";
+    const semId = defaultSemesterId || state.currentSemesterId || "";
+    $("#f-semester").value = semId;
+    fillSubjectOptions(semId, preselectSubjectId);
+    $("#f-location").value = "";
     $("#f-day").value = "1"; $("#f-weeks").value = "4-15"; $("#f-period-start").value = "1";
     $("#f-period-end").value = "2"; $("#f-start-time").value = ""; $("#f-end-time").value = "";
     $("#f-credit").value = "0"; $("#f-memo").value = "";
-    $("#f-semester").value = defaultSemesterId || state.currentSemesterId || "";
   }
   $("#course-modal").classList.add("show");
 }
 
 async function saveCourse() {
+  const subjId = $("#f-subject").value;
+  if (!subjId) { alert("请选择科目（课程名取科目名）"); return; }
+  const sel = $("#f-subject");
+  const name = sel.options[sel.selectedIndex]?.textContent.trim() || "";
   const payload = {
     semester_id: Number($("#f-semester").value),
-    name: $("#f-name").value.trim(),
-    subject_id: $("#f-subject").value ? Number($("#f-subject").value) : null,
+    name,
+    subject_id: Number(subjId),
     location: $("#f-location").value.trim(),
     day_of_week: Number($("#f-day").value),
     weeks: $("#f-weeks").value.trim(),
@@ -1045,17 +1119,20 @@ async function saveCourse() {
     credit: Number($("#f-credit").value) || 0,
     memo: $("#f-memo").value.trim(),
   };
-  if (!payload.name) { alert("请填写课程名称"); return; }
   const path = editingCourseId ? `/api/courses/${editingCourseId}` : "/api/courses";
   const method = editingCourseId ? "PATCH" : "POST";
   await api(path, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
   $("#course-modal").classList.remove("show");
+  $("#course-group-modal").classList.remove("show");
   refreshCourseView();
 }
 
 function deleteCourse(id) {
-  if (!confirm("确定删除该课程？")) return;
-  api(`/api/courses/${id}`, { method: "DELETE" }).then(() => refreshCourseView());
+  if (!confirm("确定删除该排课？")) return;
+  api(`/api/courses/${id}`, { method: "DELETE" }).then(() => {
+    refreshCourseView();
+    if ($("#course-group-modal").classList.contains("show") && detailSemesterId) renderCourseGroup(detailSemesterId);
+  });
 }
 
 /* ---------- 事件弹窗 ---------- */
@@ -1328,6 +1405,9 @@ $("#btn-add-course").onclick = () => openCourseModal(null, detailSemesterId);
 $("#btn-back-semesters").onclick = backToSemesters;
 $("#btn-modal-cancel").onclick = () => $("#course-modal").classList.remove("show");
 $("#btn-modal-save").onclick = saveCourse;
+$("#f-semester").onchange = (e) => fillSubjectOptions(e.target.value);
+$("#btn-cg-add").onclick = () => { $("#course-group-modal").classList.remove("show"); openCourseModal(null, detailSemesterId, cgSubjectId); };
+$("#btn-cg-close").onclick = () => $("#course-group-modal").classList.remove("show");
 $("#btn-add-event").onclick = openEventModal;
 $("#btn-event-cancel").onclick = () => $("#event-modal").classList.remove("show");
 $("#btn-event-save").onclick = saveEvent;

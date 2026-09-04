@@ -170,6 +170,13 @@ table.schedule td.period-label { width: 60px; color: var(--muted); font-size: 11
 .mini-stat b { color: #1a1b1c; font-weight: 700; }
 /* 位于学期管理标题后的内联统计条 */
 .card-head .mini-stats { margin: 0; flex: 0 1 auto; }
+/* 学期详情：相同科目合并展示 */
+.slot-sep { margin: 0 6px; color: #cbd5e1; }
+#detail-course-table .ops button { margin-right: 4px; }
+/* 科目排课管理弹窗（子表） */
+.cg-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; background: #fafbfc; }
+.cg-slot { flex: 1; font-size: 13px; }
+.cg-ops { display: flex; gap: 4px; }
 
 /* ===== 数据表 ===== */
 table.data { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }

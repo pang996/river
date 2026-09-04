@@ -120,7 +120,7 @@
       <button id="btn-back-semesters">← 返回学期列表</button>
       <span class="muted" id="detail-semester-title"></span>
       <span class="muted" id="detail-course-count"></span>
-      <button class="btn-primary" id="btn-add-course">+ 新建课程</button>
+      <button class="btn-primary" id="btn-add-course">+ 添加排课</button>
     </div>
     <div class="schedule-scroll"><table class="data" id="detail-course-table"></table></div>
   </section>
@@ -199,14 +199,13 @@
   </section>
 </main>
 
-<!-- ===== 课程表单弹窗 ===== -->
+<!-- ===== 排课表单弹窗（科目名即课程名） ===== -->
 <div class="modal-mask" id="course-modal">
   <div class="modal">
-    <h3 id="course-modal-title">新建课程</h3>
+    <h3 id="course-modal-title">添加排课</h3>
     <div class="form-grid">
-      <div class="full"><label>课程名称 *</label><input id="f-name"></div>
       <div><label>学期 *</label><select id="f-semester"></select></div>
-      <div><label>科目（可留空）</label><select id="f-subject"></select></div>
+      <div><label>科目 *（课程名取科目名）</label><select id="f-subject"></select></div>
       <div><label>上课地点</label><input id="f-location"></div>
       <div><label>星期几 *</label><select id="f-day">
         <option value="1">周一</option><option value="2">周二</option><option value="3">周三</option>
@@ -223,6 +222,19 @@
     <div class="actions">
       <button id="btn-modal-cancel">取消</button>
       <button class="btn-primary" id="btn-modal-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 科目排课管理弹窗（课程的父表=科目，子表=多条排课） ===== -->
+<div class="modal-mask" id="course-group-modal">
+  <div class="modal">
+    <h3 id="cg-title">排课管理</h3>
+    <div class="muted" style="font-size:12px;margin-bottom:8px" id="cg-sub"></div>
+    <div id="cg-list"></div>
+    <div class="actions" style="margin-top:12px">
+      <button class="btn-primary" id="btn-cg-add">+ 新增时段</button>
+      <button id="btn-cg-close">关闭</button>
     </div>
   </div>
 </div>
