@@ -720,36 +720,35 @@ async function renderGradPage() {
       </div>`;
   }
 
-  // 2) 四类学分项（不同颜色）
-  $("#grad-credit").innerHTML = credits.map((r) => {
+  // 2) 四类学分项（不同颜色）——一行4个紧凑标签
+  $("#grad-credit").innerHTML = `<div class="grad-credit-grid">${credits.map((r) => {
     const c = catColor(r.category);
     const pct = Math.min(r.percent || 0, 100);
     const done = r.obtained_credits >= r.required_credits && r.required_credits > 0;
-    const autoTip = r.auto_obtained > 0 ? ` · 成绩累计 ${r.auto_obtained} 学分` : "";
-    return `<div class="grad-item">
-      <div class="grad-head">
-        <span class="grad-name"><span class="grad-dot" style="background:${c}"></span>${escapeHtml(r.category)}</span>
-        <span class="grad-nums ${done ? "grad-ok" : ""}">${r.obtained_credits} / ${r.required_credits} 学分${done ? " ✓" : ""}</span>
+    const short = r.category.replace("类课程", "").replace("类", "");
+    return `<div class="grad-chip" style="border-color:${c}55">
+      <div class="chip-head">
+        <span class="grad-dot" style="background:${c}"></span>
+        <b>${escapeHtml(short)}</b>
+        <span class="chip-nums ${done ? "grad-ok" : ""}">${r.obtained_credits}/${r.required_credits}</span>
       </div>
-      <div class="progress"><div class="progress-bar" style="width:${pct}%;background:${c}"></div></div>
-      <div class="muted" style="margin-top:3px">达成度 ${r.percent}%${autoTip}</div>
+      <div class="chip-bar"><div class="chip-done" style="width:${pct}%;background:${c}"></div></div>
+      <div class="chip-pct">${r.percent}%</div>
     </div>`;
-  }).join("");
+  }).join("")}</div>`;
 
-  // 3) 达标项
-  $("#grad-completion").innerHTML = completions.length ? completions.map((r) => {
+  // 3) 达标项——一行3个紧凑标签
+  $("#grad-completion").innerHTML = completions.length ? `<div class="grad-chip-grid">${completions.map((r) => {
     const done = !!r.done;
-    return `<div class="grad-item">
-      <div class="grad-head">
-        <span class="grad-name">${escapeHtml(r.category)} <span class="tag" style="background:#f59e0b1a;color:#d97706">达标项</span></span>
-        <span class="grad-nums ${done ? "grad-ok" : ""}">${done ? "✔ 已完成" : "○ 未完成"}</span>
-        <button class="btn-sm ${done ? "" : "btn-primary"}" onclick="toggleGradDone(${r.id}, ${done ? 1 : 0})">${done ? "取消完成" : "标记完成"}</button>
+    return `<div class="grad-chip chip-task">
+      <div class="chip-head">
+        <span class="chip-status ${done ? "chip-ok" : ""}">${done ? "✓" : "○"}</span>
+        <b>${escapeHtml(r.category)}</b>
+        <span class="chip-state ${done ? "chip-ok" : ""}">${done ? "已达标" : "未完成"}</span>
+        <button class="btn-sm ${done ? "" : "btn-primary"}" onclick="toggleGradDone(${r.id}, ${done ? 1 : 0})">${done ? "取消" : "标记完成"}</button>
       </div>
-      ${done
-        ? '<div class="progress"><div class="progress-bar progress-ok" style="width:100%"></div></div><div class="muted" style="margin-top:3px">已达标</div>'
-        : '<div class="muted" style="margin-top:3px">待完成</div>'}
     </div>`;
-  }).join("") : '<div class="empty">暂无达标项</div>';
+  }).join("")}</div>` : '<div class="empty">暂无达标项</div>';
 }
 
 async function toggleGradDone(gid, currentDone) {

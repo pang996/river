@@ -179,6 +179,27 @@ table.data tr:last-child td { border-bottom: none; }
 .grad-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 .grad-nums { font-size: 12px; color: var(--muted); font-weight: 600; }
 .grad-nums.grad-ok { color: var(--green); }
+/* ===== 四类学分：一行 4 个紧凑标签 ===== */
+.grad-credit-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.grad-chip {
+  flex: 1 1 130px; min-width: 0; box-sizing: border-box;
+  padding: 8px 10px; border: 1px solid; border-radius: 10px;
+  background: #fff;
+}
+.chip-head { display: flex; align-items: center; gap: 5px; font-size: 12.5px; }
+.chip-head b { white-space: nowrap; }
+.chip-nums { margin-left: auto; font-weight: 600; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.chip-nums.grad-ok { color: var(--green); }
+.chip-bar { height: 4px; border-radius: 4px; background: #eef2f7; overflow: hidden; margin: 5px 0 3px; }
+.chip-done { height: 100%; border-radius: 4px; transition: width .4s ease; }
+.chip-pct { font-size: 11px; color: var(--muted); }
+/* 达标项：一行多标签 */
+.grad-chip-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.grad-chip.chip-task { flex: 1 1 150px; }
+.chip-status { font-size: 12px; color: #9ca3af; }
+.chip-status.chip-ok { color: var(--green); }
+.chip-state { margin-left: auto; font-size: 11px; color: #9ca3af; white-space: nowrap; }
+.chip-state.chip-ok { color: var(--green); }
 .progress { height: 8px; border-radius: 10px; background: #eef2f7; overflow: hidden; }
 .progress.big { height: 16px; }
 .progress-bar { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--primary), var(--primary-2)); transition: width .4s ease; }
