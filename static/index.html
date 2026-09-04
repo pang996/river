@@ -193,7 +193,42 @@
     <div class="stat-grid" id="stat-grid"></div>
 
     <div class="card">
-      <h3 style="margin-bottom:10px">推送配置（settings 表，只读）</h3>
+      <h3 style="margin-bottom:10px">推送设置（每日课表 → 手机）</h3>
+      <div class="form-grid" style="grid-template-columns:repeat(2,1fr)">
+        <div><label>推送通道 *</label>
+          <select id="pf-provider">
+            <option value="pushplus">PushPlus（微信接收）</option>
+            <option value="qmsg">Qmsg（QQ 接收）</option>
+            <option value="wecom">企业微信应用消息</option>
+          </select>
+        </div>
+        <div class="pf-row pf-pushplus pf-qmsg"><label>Token / Key *</label>
+          <input id="pf-token" placeholder="PushPlus token 或 Qmsg key"></div>
+        <div class="pf-row pf-qmsg"><label>QQ 目标（可多个，逗号分隔）</label>
+          <input id="pf-qmsg-target"></div>
+        <div class="pf-row pf-wecom"><label>企业 ID（corpid）</label>
+          <input id="pf-wecom-corpid"></div>
+        <div class="pf-row pf-wecom"><label>应用密钥（secret）</label>
+          <input id="pf-wecom-secret"></div>
+        <div class="pf-row pf-wecom"><label>应用 ID（agentid）</label>
+          <input id="pf-wecom-agentid"></div>
+        <div class="pf-row pf-wecom"><label>接收人（touser，@all 或成员账号）</label>
+          <input id="pf-wecom-touser"></div>
+        <div class="full pf-tip">
+          保存后点「发送测试」验证通道；随后用系统自带定时推送：
+          Windows 任务计划程序 / Linux crontab 每日运行
+          <code>python push_notifier.py</code> 即可自动推送当天课表。
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn-sm" id="btn-push-test">发送测试</button>
+        <button class="btn-primary btn-sm" id="btn-push-save">保存配置</button>
+      </div>
+      <div id="push-msg" class="muted" style="margin-top:8px;font-size:12px"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:10px">全部设置（settings 表，只读）</h3>
       <div class="schedule-scroll"><table class="data" id="settings-table"></table></div>
     </div>
   </section>

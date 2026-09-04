@@ -877,6 +877,39 @@ def api_grad_requirement_update(gid):
     return jsonify(d)
 
 
+@app.route("/api/grad_requirements", methods=["POST"])
+def api_grad_requirement_create():
+    db = get_db()
+    data = request.get_json(silent=True) or {}
+    category = (data.get("category") or "").strip()
+    if not category:
+        return jsonify({"error": "请填写达标项名称"}), 400
+    # 类型：completion=达标项（勾选式），credit=学分要求；默认达标项
+    kind = data.get("kind") or "completion"
+    note = (data.get("note") or "").strip()
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cur = db.execute(
+        "INSERT INTO grad_requirement (category, kind, required_credits, obtained_credits, done, note, medal_img, created_at, updated_at) "
+        "VALUES (?,?,0,0,0,?,?,?,?)",
+        (category, kind, note, data.get("medal_img") or "", now, now))
+    db.commit()
+    row = db.execute("SELECT * FROM grad_requirement WHERE id=?", (cur.lastrowid,)).fetchone()
+    d = dict(row)
+    d["percent"] = grad_percent(d)
+    return jsonify(d), 201
+
+
+@app.route("/api/grad_requirements/<int:gid>", methods=["DELETE"])
+def api_grad_requirement_delete(gid):
+    db = get_db()
+    row = db.execute("SELECT * FROM grad_requirement WHERE id=?", (gid,)).fetchone()
+    if not row:
+        return jsonify({"error": "要求不存在"}), 404
+    db.execute("DELETE FROM grad_requirement WHERE id=?", (gid,))
+    db.commit()
+    return jsonify({"ok": True})
+
+
 # ---------------- API：设置与节假日 ----------------
 
 @app.route("/api/settings")
@@ -884,6 +917,141 @@ def api_settings():
     db = get_db()
     rows = db.execute("SELECT * FROM settings ORDER BY key").fetchall()
     return jsonify(rows_to_list(rows))
+
+
+# ---------------- API：手机推送配置（存 settings 表） ----------------
+
+PUSH_KEYS = ["notify_provider", "notify_token", "qmsg_target",
+             "wecom_corpid", "wecom_secret", "wecom_agentid", "wecom_touser"]
+
+
+def get_push_config():
+    """读取推送配置（settings 表）。用独立连接，供网页 API 与独立脚本共用。"""
+    db = sqlite3.connect(DB_PATH)
+    db.row_factory = sqlite3.Row
+    marks = ",".join(["?"] * len(PUSH_KEYS))
+    rows = db.execute(
+        f"SELECT key, value FROM settings WHERE key IN ({marks})", PUSH_KEYS).fetchall()
+    db.close()
+    cfg = {k: "" for k in PUSH_KEYS}
+    for r in rows:
+        cfg[r["key"]] = r["value"] or ""
+    return cfg
+
+
+def save_push_config(data):
+    """保存推送配置到 settings 表（key-value upsert）"""
+    db = get_db()
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    for k in PUSH_KEYS:
+        if k in data:
+            v = str(data[k] or "").strip()
+            db.execute(
+                "INSERT INTO settings (key, value) VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value", (k, v))
+    # 同步 updated 标记（利用现有 settings 无 updated 字段，写回 provider 即可）
+    db.commit()
+    return get_push_config()
+
+
+def send_push_msg(title, content, cfg=None):
+    """
+    通过已配置通道发送一条消息到手机。
+    支持三种免费通道（settings.notify_provider 选择）：
+      pushplus  -> 微信接收（PushPlus 推送加，token）
+      qmsg      -> QQ 接收（Qmsg 酱，key + target）
+      wecom     -> 企业微信应用消息（corpid/secret/agentid/touser）
+    返回 (ok: bool, msg: str)。
+    """
+    import urllib.request
+    import urllib.parse
+    import json as _json
+
+    cfg = cfg or get_push_config()
+    provider = (cfg.get("notify_provider") or "pushplus").strip()
+
+    try:
+        if provider == "pushplus":
+            token = cfg.get("notify_token") or ""
+            if not token:
+                return False, "未配置 PushPlus token（微信通道）"
+            payload = _json.dumps({
+                "token": token, "title": title, "content": content,
+            }, ensure_ascii=False).encode("utf-8")
+            req = urllib.request.Request(
+                "https://www.pushplus.plus/send", data=payload,
+                headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                r = _json.loads(resp.read().decode("utf-8"))
+            return (r.get("code") == 200), r.get("msg") or str(r)
+
+        if provider == "qmsg":
+            key = cfg.get("notify_token") or ""
+            target = (cfg.get("qmsg_target") or "").strip().replace("，", ",")
+            if not key:
+                return False, "未配置 Qmsg key"
+            base = f"https://qmsg.zendee.cn/send/{key}"
+            if target:
+                base += f"?qq={urllib.parse.quote(target)}"
+            data = urllib.parse.urlencode({"msg": f"{title}\n{content}"}).encode("utf-8")
+            req = urllib.request.Request(base, data=data)
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                r = _json.loads(resp.read().decode("utf-8"))
+            return bool(r.get("success")), r.get("reason") or str(r)
+
+        if provider == "wecom":
+            corpid = (cfg.get("wecom_corpid") or "").strip()
+            secret = (cfg.get("wecom_secret") or "").strip()
+            agentid = (cfg.get("wecom_agentid") or "").strip()
+            touser = (cfg.get("wecom_touser") or "").strip()
+            if not (corpid and secret and agentid and touser):
+                return False, "企业微信需完整填写 corpid/secret/agentid/touser"
+            # 1) 获取 access_token
+            turl = ("https://qyapi.weixin.qq.com/cgi-bin/gettoken"
+                    f"?corpid={urllib.parse.quote(corpid)}&corpsecret={urllib.parse.quote(secret)}")
+            with urllib.request.urlopen(turl, timeout=10) as resp:
+                t = _json.loads(resp.read().decode("utf-8"))
+            if t.get("errcode") != 0:
+                return False, f"获取 access_token 失败：{t.get('errmsg')}"
+            token = t["access_token"]
+            # 2) 发送文本消息
+            murl = ("https://qyapi.weixin.qq.com/cgi-bin/message/send"
+                    f"?access_token={urllib.parse.quote(token)}")
+            payload = _json.dumps({
+                "touser": touser, "msgtype": "text", "agentid": int(agentid),
+                "text": {"content": f"{title}\n{content}"},
+                "safe": 0,
+            }, ensure_ascii=False).encode("utf-8")
+            req = urllib.request.Request(murl, data=payload,
+                                         headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                m = _json.loads(resp.read().decode("utf-8"))
+            return (m.get("errcode") == 0), m.get("errmsg") or str(m)
+
+        return False, f"未知推送通道：{provider}"
+    except Exception as e:  # noqa: BLE001
+        return False, f"发送异常：{e}"
+
+
+@app.route("/api/push_config")
+def api_push_config():
+    """读取推送配置（供网页录入界面回显）"""
+    return jsonify(get_push_config())
+
+
+@app.route("/api/push_config", methods=["POST"])
+def api_push_config_save():
+    """保存推送配置"""
+    data = request.get_json(silent=True) or {}
+    cfg = save_push_config(data)
+    return jsonify({"ok": True, "config": cfg})
+
+
+@app.route("/api/push_config/test", methods=["POST"])
+def api_push_config_test():
+    """按当前已保存配置发送一条测试消息"""
+    ok, msg = send_push_msg("课程提醒测试", "这是一条测试消息。如果你能收到，说明推送通道配置成功。✅")
+    return jsonify({"ok": ok, "msg": msg})
 
 
 @app.route("/api/holidays")

@@ -599,6 +599,7 @@ async function renderData() {
     <div class="stat"><div class="n">${o.today_week}</div><div class="l">当前第几周</div></div>
     <div class="stat"><div class="n">${(o.db_size / 1024).toFixed(0)}KB</div><div class="l">数据库大小</div></div>`;
   renderSettings();
+  loadPushConfig();
 }
 
 /* ---------- 数据概览：成就页勋章墙上方统计条 ---------- */
@@ -1052,6 +1053,54 @@ async function renderSettings() {
     `<tr><td>${escapeHtml(x.key)}</td><td>${escapeHtml(x.value || "")}</td></tr>`).join("");
 }
 
+/* ---------- 推送设置（存 settings 表，网页录入） ---------- */
+async function loadPushConfig() {
+  const cfg = await api("/api/push_config");
+  $("#pf-provider").value = cfg.notify_provider || "pushplus";
+  $("#pf-token").value = cfg.notify_token || "";
+  $("#pf-qmsg-target").value = cfg.qmsg_target || "";
+  $("#pf-wecom-corpid").value = cfg.wecom_corpid || "";
+  $("#pf-wecom-secret").value = cfg.wecom_secret || "";
+  $("#pf-wecom-agentid").value = cfg.wecom_agentid || "";
+  $("#pf-wecom-touser").value = cfg.wecom_touser || "";
+  updatePushRows();
+}
+
+/* 按通道只显示对应输入行 */
+function updatePushRows() {
+  const p = $("#pf-provider").value;
+  [["pf-pushplus", "pushplus"], ["pf-qmsg", "qmsg"], ["pf-wecom", "wecom"]].forEach(([cls, name]) => {
+    document.querySelectorAll("." + cls).forEach((el) => {
+      el.style.display = (p === name) ? "" : "none";
+    });
+  });
+}
+
+async function savePushConfig() {
+  const payload = {
+    notify_provider: $("#pf-provider").value,
+    notify_token: $("#pf-token").value.trim(),
+    qmsg_target: $("#pf-qmsg-target").value.trim(),
+    wecom_corpid: $("#pf-wecom-corpid").value.trim(),
+    wecom_secret: $("#pf-wecom-secret").value.trim(),
+    wecom_agentid: $("#pf-wecom-agentid").value.trim(),
+    wecom_touser: $("#pf-wecom-touser").value.trim(),
+  };
+  const r = await api("/api/push_config", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  $("#push-msg").textContent = r.ok ? "✅ 推送配置已保存" : "保存失败";
+  renderSettings();
+}
+
+async function testPush() {
+  await savePushConfig();
+  $("#push-msg").textContent = "正在发送测试消息，请留意手机...";
+  const r = await api("/api/push_config/test", { method: "POST" });
+  $("#push-msg").textContent = r.ok ? ("✅ " + (r.msg || "测试消息已发送，请查看手机")) : ("❌ " + r.msg);
+}
+
 /* ---------- 课程弹窗 ---------- */
 let editingCourseId = null;
 
@@ -1408,6 +1457,9 @@ $("#btn-modal-save").onclick = saveCourse;
 $("#f-semester").onchange = (e) => fillSubjectOptions(e.target.value);
 $("#btn-cg-add").onclick = () => { $("#course-group-modal").classList.remove("show"); openCourseModal(null, detailSemesterId, cgSubjectId); };
 $("#btn-cg-close").onclick = () => $("#course-group-modal").classList.remove("show");
+$("#pf-provider").onchange = updatePushRows;
+$("#btn-push-save").onclick = savePushConfig;
+$("#btn-push-test").onclick = testPush;
 $("#btn-add-event").onclick = openEventModal;
 $("#btn-event-cancel").onclick = () => $("#event-modal").classList.remove("show");
 $("#btn-event-save").onclick = saveEvent;
