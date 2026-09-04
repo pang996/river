@@ -271,8 +271,9 @@ table.data tr:last-child td { border-bottom: none; }
 .drag-handle { color: #cbd5e1; font-size: 12px; letter-spacing: -1px; user-select: none; cursor: grab; }
 
 /* ===== 科目管理（折叠分组 + 拖拽排序） ===== */
-#subject-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.subject-group { flex: 1 1 210px; min-width: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; }
+#subject-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.subject-group { min-width: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; }
+@media (max-width: 700px) { #subject-list { grid-template-columns: 1fr; } }
 .subject-group-head {
   display: flex; align-items: center; gap: 6px; padding: 8px 10px;
   background: #f8fafc; cursor: pointer; font-size: 12.5px; user-select: none;
