@@ -800,7 +800,7 @@ async function toggleGradDone(gid, currentDone) {
 let draggingSubId = null;
 
 async function renderSubjects() {
-  const [subjects, semesters] = await Promise.all([api("/api/subjects"), api("/api/semesters")]);
+  const [subjects, semesters, grades] = await Promise.all([api("/api/subjects"), api("/api/semesters"), api("/api/grades")]);
   const sel = $("#subject-semester-filter");
   const prev = sel.value;
   sel.innerHTML = '<option value="">全部学期</option>' +
@@ -829,7 +829,11 @@ async function renderSubjects() {
         <span class="drag-hint">点击展开 · 拖拽排序</span>
       </div>
       <div class="subject-group-body" style="display:none">
-        ${g.subs.map((s) => `
+        ${g.subs.map((s) => {
+          const gd = grades.find((x) => x.subject_id === s.id);
+          const pt = gd ? gpaPoint(gd.score) : null;
+          const tierColor = gd ? gpaTier(gd.score).color : "";
+          return `
         <div class="course-item" draggable="true" data-id="${s.id}"
           ondragstart="dragSubStart(event, ${s.id})" ondragover="dragSubOver(event)" ondragend="dragSubEnd(event, ${s.id})">
           <span class="drag-handle" title="拖拽排序">⋮⋮</span>
@@ -840,13 +844,16 @@ async function renderSubjects() {
               ${s.grad_category ? `<span class="tag" style="background:${gradColor(s.grad_category)}1a;color:${gradColor(s.grad_category)}">${escapeHtml(s.grad_category)}</span>` : ""}
               ${s.course_type ? `<span class="tag" style="background:#3b6ef61a;color:#2563eb">${escapeHtml(s.course_type)}</span>` : ""}
               ${s.assessment_method ? `<span class="tag" style="background:#21a1791a;color:#15803d">${escapeHtml(s.assessment_method)}</span>` : ""}
+              ${gd ? `<span class="grade-pill" style="color:${tierColor};border-color:${tierColor}66">成绩 ${gd.score} · GPA ${pt.toFixed(1)}</span>` : ""}
             </div>
           </div>
           <div class="ops">
+            <button class="btn-sm" onclick="openGradeModal(${s.id})">${gd ? "改成绩" : "录成绩"}</button>
             <button class="btn-sm" onclick="openSubjectModal(${s.id})">编辑</button>
             <button class="btn-danger btn-sm" onclick="deleteSubject(${s.id})">删除</button>
           </div>
-        </div>`).join("")}
+        </div>`;
+        }).join("")}
       </div>
     </div>`;
   }).join("");
@@ -892,6 +899,69 @@ async function dragSubEnd(e, sid) {
     body: JSON.stringify({ ids }),
   });
   renderSubjects();
+}
+
+/* ---------- 科目管理：成绩录入 ---------- */
+let editingGradeSubjectId = null;
+let gradeSubjectName = "";
+
+async function openGradeModal(sid) {
+  const subjects = await api("/api/subjects");
+  const s = subjects.find((x) => x.id === sid);
+  if (!s) return;
+  editingGradeSubjectId = sid;
+  gradeSubjectName = s.name;
+  $("#g-subject-name").value = s.name;
+  const grades = await api("/api/grades");
+  const g = grades.find((x) => x.subject_id === sid);
+  $("#g-score").value = g ? g.score : "";
+  $("#btn-g-clear").classList.toggle("hidden", !g);
+  updateGradePreview();
+  $("#grade-modal").classList.add("show");
+}
+
+function updateGradePreview() {
+  const score = $("#g-score").value.trim();
+  const box = $("#g-preview");
+  if (!score || isNaN(Number(score))) {
+    box.innerHTML = "输入成绩后实时预览绩点档位与勋章星数";
+    return;
+  }
+  const n = Number(score);
+  const p = gpaPoint(n);
+  const tier = gpaTier(n);
+  const dots = "●".repeat(tier.stars || 1);
+  box.innerHTML = `成绩 ${n} 分 → <b>绩点 ${p.toFixed(1)}</b> · ${tier.label} 档 · <span style="color:${tier.color}">${dots}</span> ×${tier.stars}星`;
+}
+
+async function saveGradeFromSubject() {
+  const score = $("#g-score").value.trim();
+  if (!score || isNaN(Number(score))) { alert("请填写有效成绩（0-100）"); return; }
+  await api("/api/grades", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ subject_id: editingGradeSubjectId, score: Number(score) }),
+  });
+  $("#grade-modal").classList.remove("show");
+  refreshAfterGrade();
+}
+
+function clearGradeFromSubject() {
+  if (!confirm(`确定清除「${gradeSubjectName}」的成绩？`)) return;
+  api("/api/grades").then(async (grades) => {
+    const g = grades.find((x) => x.subject_id === editingGradeSubjectId);
+    if (g) await api(`/api/grades/${g.id}`, { method: "DELETE" });
+    $("#grade-modal").classList.remove("show");
+    refreshAfterGrade();
+  });
+}
+
+function refreshAfterGrade() {
+  renderSubjects();
+  renderGradPage();
+  renderSemesters();
+  loadOverview();
+  if (detailSemesterId) renderSemesterDetail(detailSemesterId);
 }
 
 /* ---------- 推送配置（只读） ---------- */
@@ -1255,6 +1325,10 @@ $("#btn-import-cancel").onclick = () => $("#import-subject-modal").classList.rem
 $("#btn-import-save").onclick = saveImportSubjects;
 $("#btn-subject-cancel").onclick = () => $("#subject-modal").classList.remove("show");
 $("#btn-subject-save").onclick = saveSubject;
+$("#btn-g-cancel").onclick = () => $("#grade-modal").classList.remove("show");
+$("#btn-g-save").onclick = saveGradeFromSubject;
+$("#btn-g-clear").onclick = clearGradeFromSubject;
+$("#g-score").oninput = updateGradePreview;
 $("#btn-add-semester").onclick = () => openSemesterModal(null);
 $("#btn-semester-cancel").onclick = () => $("#semester-modal").classList.remove("show");
 $("#btn-semester-save").onclick = saveSemester;

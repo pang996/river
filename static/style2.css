@@ -265,6 +265,11 @@ table.data tr:last-child td { border-bottom: none; }
 #subject-semester-filter:focus { outline: none; border-color: var(--primary); }
 .subj-medal { width: 22px; height: 23px; vertical-align: -5px; margin-right: 5px; border-radius: 4px; }
 .medal-img { width: 34px; height: 36px; border-radius: 6px; }
+.grade-pill {
+  display: inline-block; margin-left: 4px; padding: 0 6px;
+  font-size: 10px; font-weight: 600; border: 1px solid; border-radius: 8px;
+  background: #fff;
+}
 
 /* ===== 勋章墙 ===== */
 .medal-wall { display: flex; flex-wrap: wrap; gap: 14px; }
