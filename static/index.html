@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>课程提醒 · 本地测试平台</title>
+<link rel="stylesheet" href="style2.css?v=20260903-15">
+</head>
+<body>
+<!-- ===== 登录遮罩（未登录时覆盖全屏） ===== -->
+<div id="login-mask">
+  <div class="login-card">
+    <h2>🔐 课程管理系统</h2>
+    <p class="muted" style="margin:4px 0 14px">登录后访问课表、课程与毕业进度</p>
+    <input id="login-username" placeholder="账号" autocomplete="username">
+    <input id="login-password" type="password" placeholder="密码" autocomplete="current-password">
+    <div class="login-err" id="login-err"></div>
+    <button class="btn-primary" id="btn-login">登 录</button>
+    <div class="login-foot" id="login-hint">默认账号 admin，初始密码见部署说明，登录后请尽快修改</div>
+  </div>
+</div>
+
+<header>
+  <h1>📚 课程提醒 · 本地测试平台</h1>
+  <span class="badge" id="db-badge">加载中…</span>
+  <nav>
+    <button data-tab="schedule" class="active">课表</button>
+    <button data-tab="courses">课程</button>
+    <button data-tab="events">事件</button>
+    <button data-tab="grad">毕业</button>
+    <button data-tab="data">数据</button>
+  </nav>
+  <div class="user-area">
+    <span class="badge" id="user-badge"></span>
+    <button class="btn-sm" id="btn-change-pw">修改密码</button>
+    <button class="btn-sm" id="btn-logout">退出</button>
+  </div>
+</header>
+
+<main>
+  <!-- ===== 课表（周视图 / 月视图） ===== -->
+  <section id="tab-schedule">
+    <div class="toolbar">
+      <select id="semester-select"></select>
+      <div class="week-switch" id="week-nav">
+        <button class="btn-sm" id="prev-week">◀ 上一周</button>
+        <span class="week-num" id="week-label">第1周</span>
+        <button class="btn-sm" id="next-week">下一周 ▶</button>
+      </div>
+      <button class="btn-sm" id="go-today">回到当前周</button>
+      <input type="number" id="week-input" min="1" max="30" style="width:70px" placeholder="周次">
+      <div class="week-switch" id="month-nav" style="display:none">
+        <button class="btn-sm" id="prev-month">◀ 上月</button>
+        <span class="week-num" id="month-label">本月</span>
+        <button class="btn-sm" id="next-month">下月 ▶</button>
+      </div>
+      <button class="btn-sm" id="go-month-today" style="display:none">回到本月</button>
+      <span class="muted" id="week-tip"></span>
+      <span style="flex:1"></span>
+      <button class="btn-sm" id="btn-view-month">月视图</button>
+      <button class="btn-sm" id="btn-view-week" style="display:none">周视图</button>
+    </div>
+
+    <!-- 周视图 -->
+    <div class="card" id="week-view-box">
+      <div class="schedule-scroll">
+        <table class="schedule" id="schedule-table"></table>
+      </div>
+      <div class="card-head" style="margin-top:14px">
+        <h3>本周事件</h3>
+        <button class="btn-sm" id="btn-add-week-event">+ 新增事件</button>
+      </div>
+      <div class="muted" style="margin-bottom:8px">本页周历中一并展示课程与该周事件</div>
+      <div id="week-events"></div>
+    </div>
+
+    <!-- 月视图 -->
+    <div class="card" id="month-view-box" style="display:none">
+      <div class="muted" style="margin-bottom:8px">月历：每天显示课程与事件，放假当天标注</div>
+      <div class="month-scroll" id="month-grid"></div>
+    </div>
+  </section>
+
+  <!-- ===== 课程管理（学期列表 → 点击进入学期详情） ===== -->
+  <section id="tab-courses" class="hidden">
+    <div class="card">
+      <div class="card-head">
+        <h3>学期管理</h3>
+        <div style="display:flex;gap:8px">
+          <span class="muted">拖拽卡片可排序</span>
+          <button class="btn-primary btn-sm" id="btn-add-semester">+ 新增学期</button>
+        </div>
+      </div>
+      <div class="muted" style="margin-bottom:8px">点击学期"进入"查看该学期的课程与成绩</div>
+      <div class="semester-grid" id="semester-grid"></div>
+    </div>
+
+    <h2 class="section-divider">数据维护</h2>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>科目管理</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="subject-semester-filter" style="width:auto;padding:5px 8px;border:1px solid var(--line);border-radius:8px;font-size:12px">
+            <option value="">全部学期</option>
+          </select>
+          <button class="btn-sm" id="btn-import-subjects">批量导入</button>
+          <button class="btn-primary btn-sm" id="btn-add-subject">+ 新增科目</button>
+        </div>
+      </div>
+      <div class="muted" style="margin-bottom:8px">按学期折叠分组展示，点击标题展开/收起，组内拖拽可排序</div>
+      <div id="subject-list"></div>
+    </div>
+  </section>
+
+  <!-- ===== 学期详情（二级界面：该学期课程 + 成绩合并） ===== -->
+  <section id="tab-semester-detail" class="hidden">
+    <div class="toolbar">
+      <button id="btn-back-semesters">← 返回学期列表</button>
+      <span class="muted" id="detail-semester-title"></span>
+      <span class="muted" id="detail-course-count"></span>
+      <button class="btn-primary" id="btn-add-course">+ 新建课程</button>
+    </div>
+    <div class="schedule-scroll"><table class="data" id="detail-course-table"></table></div>
+  </section>
+
+  <!-- ===== 事件日程 ===== -->
+  <section id="tab-events" class="hidden">
+    <div class="toolbar">
+      <button class="btn-primary" id="btn-add-event">+ 新增事件</button>
+      <span class="muted">军训 / 考试 / 体检 / 报名等日程</span>
+    </div>
+    <div class="card" id="event-list"></div>
+
+    <h2 class="section-divider">自定义假期</h2>
+    <div class="card">
+      <div class="card-head">
+        <h3>放假 / 调休</h3>
+        <button class="btn-primary btn-sm" id="btn-add-holiday">+ 新增假期</button>
+      </div>
+      <div class="muted" style="margin-bottom:8px">放假或调休当天课表不排课（如国庆、运动会、临时停课）</div>
+      <div id="holiday-list"></div>
+    </div>
+  </section>
+
+  <!-- ===== 毕业要求 ===== -->
+  <section id="tab-grad" class="hidden">
+    <div class="card">
+      <div class="card-head">
+        <h3>🏅 勋章墙</h3>
+        <span class="muted" id="medal-summary">已获得 0 / 7</span>
+      </div>
+      <div class="medal-section-title">毕业要求勋章</div>
+      <div class="medal-wall" id="medal-wall"></div>
+      <div class="medal-section-title">课程科目勋章 <span class="muted" id="subject-medal-summary" style="font-size:11px">按成绩点亮</span></div>
+      <div class="medal-wall" id="subject-medal-wall"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>总学分达成度</h3>
+        <span class="muted">四类学分合并统计</span>
+      </div>
+      <div id="grad-total"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>分类学分</h3>
+        <span class="muted">四类学分按颜色区分</span>
+      </div>
+      <div id="grad-credit"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>达标项</h3>
+        <span class="muted">英语四六级 / 普通话等级</span>
+      </div>
+      <div id="grad-completion"></div>
+    </div>
+  </section>
+
+  <!-- ===== 数据概览 ===== -->
+  <section id="tab-data" class="hidden">
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <div class="card">
+      <h3 style="margin-bottom:10px">推送配置（settings 表，只读）</h3>
+      <div class="schedule-scroll"><table class="data" id="settings-table"></table></div>
+    </div>
+  </section>
+</main>
+
+<!-- ===== 课程表单弹窗 ===== -->
+<div class="modal-mask" id="course-modal">
+  <div class="modal">
+    <h3 id="course-modal-title">新建课程</h3>
+    <div class="form-grid">
+      <div class="full"><label>课程名称 *</label><input id="f-name"></div>
+      <div><label>学期 *</label><select id="f-semester"></select></div>
+      <div><label>科目（可留空）</label><select id="f-subject"></select></div>
+      <div><label>上课地点</label><input id="f-location"></div>
+      <div><label>星期几 *</label><select id="f-day">
+        <option value="1">周一</option><option value="2">周二</option><option value="3">周三</option>
+        <option value="4">周四</option><option value="5">周五</option><option value="6">周六</option><option value="7">周日</option>
+      </select></div>
+      <div><label>周次 *（如 4-9 / 5,7,8 / 6 / all）</label><input id="f-weeks" placeholder="4-9"></div>
+      <div><label>起始节次 *</label><input id="f-period-start" type="number" min="1" max="12" value="1"></div>
+      <div><label>结束节次 *</label><input id="f-period-end" type="number" min="1" max="12" value="1"></div>
+      <div><label>开始时间（可选）</label><input id="f-start-time" placeholder="10:00"></div>
+      <div><label>结束时间（可选）</label><input id="f-end-time" placeholder="12:00"></div>
+      <div><label>学分</label><input id="f-credit" type="number" step="0.5" value="0"></div>
+      <div class="full"><label>备注</label><textarea id="f-memo" rows="2"></textarea></div>
+    </div>
+    <div class="actions">
+      <button id="btn-modal-cancel">取消</button>
+      <button class="btn-primary" id="btn-modal-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 假期表单弹窗 ===== -->
+<div class="modal-mask" id="holiday-modal">
+  <div class="modal modal-sm">
+    <h3>新增假期</h3>
+    <div class="form-grid">
+      <div class="full"><label>日期 *</label><input id="h-date" type="date"></div>
+      <div class="full"><label>名称 *</label><input id="h-name" placeholder="如 国庆节 / 校运动会 / 临时停课"></div>
+      <div><label>类型</label><select id="h-kind">
+        <option value="holiday">放假</option><option value="workday">调休补课</option>
+      </select></div>
+      <div><label>备注（可选）</label><input id="h-note" placeholder="选填"></div>
+    </div>
+    <div class="actions">
+      <button id="btn-holiday-cancel">取消</button>
+      <button class="btn-primary" id="btn-holiday-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 课程备忘弹窗 ===== -->
+<div class="modal-mask" id="memo-modal">
+  <div class="modal">
+    <h3 id="memo-modal-title">课程备忘</h3>
+    <div class="form-grid">
+      <div class="full"><label>新增备忘</label>
+        <div style="display:flex;gap:6px">
+          <input id="memo-input" placeholder="如 下周提交实验报告">
+          <button class="btn-primary btn-sm" id="btn-memo-add">添加</button>
+        </div>
+      </div>
+      <div class="full"><label>上课日期（可选，用于按天提醒）</label><input id="memo-date" type="date"></div>
+    </div>
+    <div id="memo-list" style="margin-top:6px"></div>
+    <div class="actions">
+      <button id="btn-memo-close">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 事件表单弹窗 ===== -->
+<div class="modal-mask" id="event-modal">
+  <div class="modal">
+    <h3>新增事件</h3>
+    <div class="form-grid">
+      <div><label>日期 *</label><input id="e-date" type="date"></div>
+      <div><label>时间（可选）</label><input id="e-time" placeholder="08:30"></div>
+      <div><label>时间段（可选）</label><input id="e-period" placeholder="上午 / 第3~4节"></div>
+      <div class="full"><label>标题 *</label><input id="e-title"></div>
+      <div class="full"><label>地点（可选）</label><input id="e-location"></div>
+      <div class="full"><label>备注（可选）</label><textarea id="e-note" rows="2"></textarea></div>
+    </div>
+    <div class="actions">
+      <button id="btn-event-cancel">取消</button>
+      <button class="btn-primary" id="btn-event-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 科目批量导入弹窗 ===== -->
+<div class="modal-mask" id="import-subject-modal">
+  <div class="modal">
+    <h3>批量导入科目</h3>
+    <div class="form-grid">
+      <div class="full"><label>导入到学期 *</label><select id="imp-semester"></select></div>
+      <div class="full">
+        <label>科目列表（每行一条）</label>
+        <textarea id="imp-text" rows="9" placeholder="高等数学,5,学科基础类,工学馆101&#10;线性代数,4,学科基础类,工学馆102&#10;C语言程序设计,3.5,学科基础类,工学馆103&#10;大学物理,4,专业类"></textarea>
+      </div>
+      <div class="full muted">格式：<b>科目名,学分,培养类别,地点</b>（学分/类别/地点可省略；分隔符支持英文逗号、中文逗号、Tab）</div>
+    </div>
+    <div class="actions">
+      <button id="btn-import-cancel">取消</button>
+      <button class="btn-primary" id="btn-import-save">开始导入</button>
+    </div>
+    <div id="import-result" class="muted" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ===== 科目表单弹窗 ===== -->
+<div class="modal-mask" id="subject-modal">
+  <div class="modal">
+    <h3 id="subject-modal-title">新增科目</h3>
+    <div class="form-grid">
+      <div class="full"><label>科目名称 *</label><input id="s-name"></div>
+      <div><label>所属学期 *</label><select id="s-semester"></select></div>
+      <div><label>学分</label><input id="s-credit" type="number" step="0.5" value="0"></div>
+      <div><label>地点（可选）</label><input id="s-location"></div>
+      <div class="full"><label>培养类别（对应毕业要求）</label><select id="s-grad-category">
+        <option value="">（未分类）</option>
+      </select></div>
+      <div><label>课程类型</label><select id="s-course-type">
+        <option value="">（未设置）</option>
+        <option value="必修">必修</option>
+        <option value="选修">选修</option>
+      </select></div>
+      <div><label>考核方式</label><select id="s-assessment-method">
+        <option value="">（未设置）</option>
+        <option value="考试">考试</option>
+        <option value="考查">考查</option>
+      </select></div>
+      <div class="full"><label>勋章图（SVG data URI，可选）</label><textarea id="s-medal-img" rows="2" placeholder="data:image/svg+xml;base64,..."></textarea></div>
+    </div>
+    <div class="actions">
+      <button id="btn-subject-cancel">取消</button>
+      <button class="btn-primary" id="btn-subject-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 学期表单弹窗 ===== -->
+<div class="modal-mask" id="semester-modal">
+  <div class="modal modal-sm">
+    <h3 id="semester-modal-title">新增学期</h3>
+    <div class="form-grid">
+      <div class="full"><label>学期名称 *</label><input id="m-name" placeholder="如 2027年秋大二上"></div>
+      <div><label>开始日期 *</label><input id="m-start" type="date"></div>
+      <div><label>绩点制</label><select id="m-scale">
+        <option value="5.0">5.0 制</option><option value="4.0">4.0 制</option>
+      </select></div>
+      <div class="full"><label><input type="checkbox" id="m-current"> 设为当前学期</label></div>
+    </div>
+    <div class="actions">
+      <button id="btn-semester-cancel">取消</button>
+      <button class="btn-primary" id="btn-semester-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 修改密码弹窗 ===== -->
+<div class="modal-mask" id="pw-modal">
+  <div class="modal modal-sm">
+    <h3>修改密码</h3>
+    <div class="form-grid">
+      <div class="full"><label>原密码 *</label><input id="pw-old" type="password" autocomplete="current-password"></div>
+      <div class="full"><label>新密码 *（至少 6 位）</label><input id="pw-new" type="password" autocomplete="new-password"></div>
+    </div>
+    <div class="actions">
+      <button id="btn-pw-cancel">取消</button>
+      <button class="btn-primary" id="btn-pw-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<script src="app2.js?v=20260903-15"></script>
+</body>
+</html>
+

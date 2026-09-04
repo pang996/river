@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+data/course_backup_*.db
+本地测试平台使用说明.md
+_*.py

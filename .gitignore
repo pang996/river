@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.pyc
+
+# 备份与临时
+data/course_backup_*.db
+*.bak_*
+_*.py
+probe_*.py
