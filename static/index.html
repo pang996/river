@@ -24,7 +24,8 @@
   <h1>📚 课程提醒 · 本地测试平台</h1>
   <span class="badge" id="db-badge">加载中…</span>
   <nav>
-    <button data-tab="schedule" class="active">课表</button>
+    <button data-tab="home" class="active">首页</button>
+    <button data-tab="schedule">课表</button>
     <button data-tab="courses">课程</button>
     <button data-tab="events">事件</button>
     <button data-tab="grad">成就</button>
@@ -39,7 +40,110 @@
 
 <main>
   <!-- ===== 课表（周视图 / 月视图） ===== -->
-  <section id="tab-schedule">
+  <!-- ===== 首页：世界树勋章墙欢迎界面 ===== -->
+  <section id="tab-home">
+    <!-- 欢迎语区域 -->
+    <div class="welcome-banner" id="welcome-banner">
+      <div class="welcome-text">
+        <h1 class="welcome-title" id="welcome-title">欢迎回来</h1>
+        <p class="welcome-subtitle" id="welcome-subtitle">你的学业成就，在世界树下熠熠生辉</p>
+      </div>
+      <div class="welcome-controls">
+        <div class="style-group-selector">
+          <span class="muted" style="font-size:11px;">风格：</span>
+          <button class="sg-btn active" data-sg="1" onclick="switchStyleGroup(1)">默认风</button>
+          <button class="sg-btn" data-sg="2" onclick="switchStyleGroup(2)">神迹风</button>
+        </div>
+        <span class="muted" id="medal-summary-home">已获得 0 / 80</span>
+        <button class="btn-sm" onclick="toggleMedalFullscreen()" title="全屏查看勋章墙">⛶ 全屏</button>
+      </div>
+    </div>
+
+    <!-- 世界树勋章墙 -->
+    <div class="card" id="medal-wall-card">
+      <div id="medal-wall-container" class="worldtree-wall">
+        <div class="wt-bg-layer"></div>
+
+        <!-- 左侧学科区域 -->
+        <div class="wt-side wt-left-side">
+          <div class="wt-subject-zone">
+            <div class="wt-zone-title">📖 通识类 <span class="wt-count" id="count-通识类"></span></div>
+            <div class="wt-subject-grid" id="zone-通识类"></div>
+          </div>
+          <div class="wt-subject-zone">
+            <div class="wt-zone-title">⚙️ 学科基础 <span class="wt-count" id="count-学科基础"></span></div>
+            <div class="wt-subject-grid" id="zone-学科基础"></div>
+          </div>
+        </div>
+
+        <!-- 中央树干区域 -->
+        <div class="wt-center">
+          <div class="wt-trunk">
+            <div class="wt-trunk-title">🎖️ 毕业要求</div>
+            <div class="wt-grad-events" id="grad-medal-grid"></div>
+          </div>
+          <!-- 底部石柱 -->
+          <div class="wt-pillars">
+            <div class="wt-pillar" id="wt-pillar-grad" onclick="showCertModal('graduation')">
+              <div class="wt-pillar-cap"></div>
+              <div class="wt-pillar-shaft">
+                <div class="wt-pillar-medal" id="cert-grad-medal"></div>
+                <div class="wt-pillar-name">毕业勋章</div>
+                <div class="wt-pillar-hint">点击 → 毕业证书</div>
+              </div>
+              <div class="wt-pillar-base"></div>
+            </div>
+            <div class="wt-pillar" id="wt-pillar-degree" onclick="showCertModal('degree')">
+              <div class="wt-pillar-cap"></div>
+              <div class="wt-pillar-shaft">
+                <div class="wt-pillar-medal" id="cert-degree-medal"></div>
+                <div class="wt-pillar-name">学位勋章</div>
+                <div class="wt-pillar-hint">点击 → 学位证书</div>
+              </div>
+              <div class="wt-pillar-base"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧学科区域 -->
+        <div class="wt-side wt-right-side">
+          <div class="wt-subject-zone">
+            <div class="wt-zone-title">🔬 专业方向 <span class="wt-count" id="count-专业方向"></span></div>
+            <div class="wt-subject-grid" id="zone-专业方向"></div>
+          </div>
+          <div class="wt-subject-zone">
+            <div class="wt-zone-title">🛠️ 实践类 <span class="wt-count" id="count-实践类"></span></div>
+            <div class="wt-subject-grid" id="zone-实践类"></div>
+          </div>
+        </div>
+
+        <!-- 特殊纪念勋章（树冠位置） -->
+        <div class="wt-special-zone">
+          <div class="wt-zone-title">✨ 特殊纪念</div>
+          <div class="wt-special-grid" id="special-medal-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 证书弹窗 -->
+    <div id="cert-modal" class="cert-modal hidden">
+      <div class="cert-modal-content">
+        <div class="cert-modal-close" onclick="closeCertModal()">✕</div>
+        <div id="cert-modal-body"></div>
+      </div>
+    </div>
+
+    <!-- 勋章放大弹窗 -->
+    <div id="badge-modal" class="badge-modal hidden" onclick="closeBadgeModal()">
+      <div class="badge-modal-content" onclick="event.stopPropagation()">
+        <div class="badge-modal-close" onclick="closeBadgeModal()">✕</div>
+        <img id="badge-modal-img" src="" alt="">
+        <div id="badge-modal-info"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-schedule" class="hidden">
     <div class="toolbar">
       <select id="semester-select"></select>
       <div class="week-switch" id="week-nav">
@@ -174,60 +278,6 @@
     <div class="card">
       <div class="card-head"><h3>数据概览</h3><span class="muted">课程 / 事件 / 科目 / 学期 / 周数 / 数据库</span></div>
       <div class="stat-grid" id="grad-stat-grid"></div>
-    </div>
-
-    <div class="card" id="medal-wall-card">
-      <div class="card-head">
-        <h3>🏅 勋章墙</h3>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <div class="style-group-selector">
-            <span class="muted" style="font-size:11px;">风格：</span>
-            <button class="sg-btn active" data-sg="1" onclick="switchStyleGroup(1)">默认风</button>
-            <button class="sg-btn" data-sg="2" onclick="switchStyleGroup(2)">神迹风</button>
-          </div>
-          <span class="muted" id="medal-summary">已获得 0 / 80</span>
-          <button class="btn-sm" onclick="toggleMedalFullscreen()" title="全屏查看勋章墙">⛶ 全屏</button>
-        </div>
-      </div>
-
-      <!-- 6区域勋章墙容器 -->
-      <div id="medal-wall-container">
-        <!-- 区域1: 证书区 -->
-        <div class="medal-zone cert-zone">
-          <div class="zone-title">📜 证书区 <span class="muted" style="font-size:11px;font-weight:400;">（预留位置）</span></div>
-          <div class="cert-grid" id="cert-grid"></div>
-        </div>
-
-        <!-- 区域2: 毕业要求勋章 -->
-        <div class="medal-zone">
-          <div class="zone-title">🎖️ 毕业要求勋章</div>
-          <div class="medal-grid" id="grad-medal-grid"></div>
-        </div>
-
-        <!-- 区域3-6: 4个学科分类 -->
-        <div class="medal-zone">
-          <div class="zone-title">📖 通识类 <span class="muted zone-count" id="count-通识类"></span></div>
-          <div class="medal-grid" id="zone-通识类"></div>
-        </div>
-        <div class="medal-zone">
-          <div class="zone-title">⚙️ 学科基础 <span class="muted zone-count" id="count-学科基础"></span></div>
-          <div class="medal-grid" id="zone-学科基础"></div>
-        </div>
-        <div class="medal-zone">
-          <div class="zone-title">🔬 专业方向 <span class="muted zone-count" id="count-专业方向"></span></div>
-          <div class="medal-grid" id="zone-专业方向"></div>
-        </div>
-        <div class="medal-zone">
-          <div class="zone-title">🛠️ 实践类 <span class="muted zone-count" id="count-实践类"></span></div>
-          <div class="medal-grid" id="zone-实践类"></div>
-        </div>
-
-        <!-- 特殊纪念勋章（开学典礼等，不放入学科分类） -->
-        <div class="medal-zone special-zone">
-          <div class="zone-title">✨ 特殊纪念勋章</div>
-          <div class="medal-grid" id="special-medal-grid"></div>
-        </div>
-      </div>
     </div>
   </section>
 

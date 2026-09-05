@@ -98,6 +98,9 @@ async function reloadAll() {
   renderData();
   renderSemesters();
   renderSubjects();
+  // 首页：渲染勋章墙和欢迎语
+  renderMedalWall();
+  updateWelcomeMessage();
 }
 
 const COLORS = ["#3b6ef6", "#21a179", "#8b5cf6", "#f59e0b", "#ef4444", "#14b8a6"];
@@ -811,9 +814,16 @@ async function renderMedalWall() {
       if (earned) subjectEarned++;
       const tier = earned ? gpaTier(g.score) : null;
       const short = s.name.length > 6 ? s.name.slice(0, 6) + "…" : s.name;
-      return `<div class="medal-item ${earned ? "earned" : "locked"}" title="${escapeHtml(s.name)}${s.credit ? ` · ${s.credit}学分` : ""}">
-        <div class="medal-circle" style="${tier ? `border-color:${tier.color};box-shadow:0 0 12px ${tier.color}66` : ""}">
-          <div class="medal-inner" style="${tier ? `color:${tier.color}` : ""}">${subjectIcon(s.name, s.grad_category)}</div>
+      const badgeImg = getBadgeImg(s.name);
+      const circleStyle = badgeImg
+        ? `--badge-img:url('${badgeImg}');`
+        : (tier ? `border-color:${tier.color};box-shadow:0 0 12px ${tier.color}66` : "");
+      const innerHtml = badgeImg
+        ? ""
+        : `<div class="medal-inner" style="${tier ? `color:${tier.color}` : ""}">${subjectIcon(s.name, s.grad_category)}</div>`;
+      return `<div class="medal-item ${earned ? "earned" : "locked"} ${badgeImg ? "has-img" : ""}" title="${escapeHtml(s.name)}${s.credit ? ` · ${s.credit}学分` : ""}" onclick="showBadgeModal(${badgeImg ? `'${badgeImg}'` : 'null'}, '${escapeHtml(s.name)}', '${s.credit ? s.credit + "学分" : ""}', ${earned})">
+        <div class="medal-circle" style="${circleStyle}">
+          ${innerHtml}
         </div>
         <div class="medal-label">${escapeHtml(short)}</div>
         <div class="medal-sub">${s.credit ? s.credit + "学分" : ""}</div>
@@ -836,12 +846,89 @@ async function renderMedalWall() {
     </div>`;
   }).join("");
 
+  // 石柱：毕业勋章和学位勋章
+  const gradMedal = data.grad_req_zone.items.find(r => r.category === "毕业勋章");
+  const degreeMedal = data.grad_req_zone.items.find(r => r.category === "学位勋章");
+  const gradPillar = $("#cert-grad-medal");
+  const degreePillar = $("#cert-degree-medal");
+  if (gradPillar) {
+    const earned = !!gradMedal?.done;
+    gradPillar.innerHTML = `<div class="pillar-medal-circle ${earned ? "earned" : "locked"}"><div class="medal-inner">🎓</div></div>`;
+  }
+  if (degreePillar) {
+    const earned = !!degreeMedal?.done;
+    degreePillar.innerHTML = `<div class="pillar-medal-circle ${earned ? "earned" : "locked"}"><div class="medal-inner">🏛️</div></div>`;
+  }
+
   // 统计
   const total = data.grad_req_zone.items.length +
                 data.subject_zones.reduce((s, z) => s + z.items.length, 0) +
                 data.special_zone.items.length;
   const earned = gradEarned + subjectEarned + (data.special_zone.items.length ? 1 : 0);
-  $("#medal-summary").textContent = `已获得 ${earned} / ${total}`;
+  // 同时更新成就页和首页的统计元素
+  const sum1 = $("#medal-summary");
+  const sum2 = $("#medal-summary-home");
+  if (sum1) sum1.textContent = `已获得 ${earned} / ${total}`;
+  if (sum2) sum2.textContent = `已获得 ${earned} / ${total}`;
+  // 全局变量供欢迎语使用
+  window._medalEarned = earned;
+  window._medalTotal = total;
+}
+
+// 证书弹窗：显示毕业证书或学位证书
+function showCertModal(type) {
+  const modal = $("#cert-modal");
+  const body = $("#cert-modal-body");
+  if (!modal || !body) return;
+  const isGrad = type === "graduation";
+  const title = isGrad ? "毕业证书" : "学位证书";
+  const icon = isGrad ? "🎓" : "🏛️";
+  const earned = isGrad ? window._gradEarned : window._degreeEarned;
+  body.innerHTML = `
+    <div class="cert-display">
+      <div class="cert-icon">${icon}</div>
+      <h2 class="cert-title">${title}</h2>
+      <div class="cert-status ${earned ? "earned" : "locked"}">
+        ${earned ? "✅ 已获得" : "🔒 未达成"}
+      </div>
+      <div class="cert-desc">
+        ${earned
+          ? `恭喜！你已完成全部毕业要求，${title}已颁发。`
+          : `完成全部毕业要求后即可获得${title}。继续加油！`}
+      </div>
+      <div class="cert-placeholder">
+        <div class="cert-paper">
+          <div class="cert-paper-title">${title}</div>
+          <div class="cert-paper-seal">${earned ? "🔴" : "⚪"}</div>
+        </div>
+      </div>
+    </div>
+  `;
+  modal.classList.remove("hidden");
+}
+function closeCertModal() {
+  const modal = $("#cert-modal");
+  if (modal) modal.classList.add("hidden");
+}
+
+// 勋章放大弹窗
+function showBadgeModal(imgSrc, name, sub, earned) {
+  const modal = $("#badge-modal");
+  const img = $("#badge-modal-img");
+  const info = $("#badge-modal-info");
+  if (!modal || !img || !info) return;
+  img.src = imgSrc || "";
+  img.style.display = imgSrc ? "block" : "none";
+  info.innerHTML = `
+    <div class="badge-modal-name">${name || ""}</div>
+    <div class="badge-modal-sub">${sub || ""}</div>
+    <div class="badge-modal-status ${earned ? "earned" : "locked"}">${earned ? "已点亮" : "未点亮"}</div>
+  `;
+  modal.classList.remove("hidden");
+}
+function closeBadgeModal() {
+  const modal = $("#badge-modal");
+  if (modal) modal.classList.add("hidden");
 }
 
 // 毕业要求勋章图标
@@ -855,6 +942,43 @@ function gradReqIcon(cat) {
 }
 
 // 科目勋章图标（按科目名/分类匹配）
+// 勋章图片映射表（科目名关键词 -> 图片路径）
+const BADGE_IMG_MAP = {
+  // 数学类
+  "高等数学B": "badges/group_math_r0c0.png",
+  "高等数学B(二)": "badges/group_math_r0c1.png",
+  "线性代数": "badges/group_math_r0c2.png",
+  "概率论与数理统计A": "badges/group_math_r1c0.png",
+  "复变函数与积分变换": "badges/group_math_r1c1.png",
+  "数学物理方程与特殊函数": "badges/group_math_r1c2.png",
+  // 电子信息类
+  "Matlab与通信系统分析": "badges/group_ee_r0c0.png",
+  "Matlab语言及应用": "badges/group_ee_r0c1.png",
+  "信号与系统分析": "badges/group_ee_r0c2.png",
+  "信息论基础": "badges/group_ee_r1c0.png",
+  "单片机原理及应用": "badges/group_ee_r1c1.png",
+  "微机原理与接口技术": "badges/group_ee_r1c2.png",
+  // 学科基础类
+  "C++课程设计": "badges/group_base_r0c0.png",
+  "数字电子技术": "badges/group_base_r0c1.png",
+  "模拟电子技术": "badges/group_base_r0c2.png",
+  "电路原理": "badges/group_base_r1c0.png",
+  "计算机引论": "badges/group_base_r1c1.png",
+  "C++程序设计": "badges/group_base_r1c2.png",
+};
+
+// 根据科目名获取勋章图片路径
+function getBadgeImg(name) {
+  if (!name) return null;
+  // 精确匹配
+  if (BADGE_IMG_MAP[name]) return BADGE_IMG_MAP[name];
+  // 关键词模糊匹配
+  for (const key in BADGE_IMG_MAP) {
+    if (name.includes(key) || key.includes(name)) return BADGE_IMG_MAP[key];
+  }
+  return null;
+}
+
 function subjectIcon(name, cat) {
   const n = name || "";
   if (/数学|高数|微积分|线性代数|概率|复变|数理方程/.test(n)) return "∑";
@@ -888,6 +1012,24 @@ function starRowHtml(tier) {
   return stars;
 }
 
+// 欢迎语：根据风格组显示不同内容
+function updateWelcomeMessage() {
+  const titleEl = $("#welcome-title");
+  const subEl = $("#welcome-subtitle");
+  if (!titleEl || !subEl) return;
+  const earned = window._medalEarned || 0;
+  const total = window._medalTotal || 80;
+  if (currentStyleGroup === 2) {
+    // 神迹风欢迎语
+    titleEl.textContent = "欢迎回来，勇者";
+    subEl.textContent = `世界树已为你点亮 ${earned} 枚勋章，求学之旅仍在继续……`;
+  } else {
+    // 默认风欢迎语
+    titleEl.textContent = "欢迎回来";
+    subEl.textContent = `已获得 ${earned} / ${total} 枚勋章，继续加油！`;
+  }
+}
+
 // 风格组切换
 async function switchStyleGroup(id) {
   currentStyleGroup = id;
@@ -899,6 +1041,8 @@ async function switchStyleGroup(id) {
   // 切换body主题类
   document.body.classList.toggle("theme-miracle", id === 2);
   document.body.classList.toggle("theme-default", id === 1);
+  // 更新欢迎语
+  updateWelcomeMessage();
   // 重新渲染勋章墙
   renderMedalWall();
 }
@@ -1622,8 +1766,9 @@ document.querySelectorAll("nav button").forEach((btn) => {
   btn.onclick = () => {
     document.querySelectorAll("nav button").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
-    ["schedule", "courses", "events", "grad", "data"].forEach((t) =>
+    ["home", "schedule", "courses", "events", "grad", "data"].forEach((t) =>
       $(`#tab-${t}`).classList.toggle("hidden", t !== btn.dataset.tab));
+    if (btn.dataset.tab === "home") { renderMedalWall(); updateWelcomeMessage(); }
     if (btn.dataset.tab === "schedule") { renderSchedule(); if (state.viewMode === "month") renderMonthView(); }
     if (btn.dataset.tab === "courses") { renderSemesters(); renderSubjects(); renderCourseMiniStats(); }
     if (btn.dataset.tab === "events") { renderEvents(); renderHolidays(); }
