@@ -592,6 +592,101 @@ def api_badges():
     return jsonify(rows_to_list(rows))
 
 
+# ========== 神迹风升级：风格组 + 勋章分类 ==========
+
+@app.route("/api/style_groups")
+def api_style_groups():
+    """获取所有风格组及当前激活状态"""
+    db = get_db()
+    rows = db.execute("SELECT id, name, description, theme_class, is_active FROM style_group ORDER BY id").fetchall()
+    active = db.execute("SELECT value FROM settings WHERE key='active_style_group'").fetchone()
+    return jsonify({
+        "groups": rows_to_list(rows),
+        "active_id": int(active["value"]) if active else 1
+    })
+
+
+@app.route("/api/style_groups/activate", methods=["POST"])
+def api_style_activate():
+    """激活指定风格组"""
+    data = request.get_json(silent=True) or {}
+    gid = data.get("id")
+    if not gid:
+        return jsonify({"error": "缺少风格组ID"}), 400
+    db = get_db()
+    row = db.execute("SELECT id FROM style_group WHERE id=?", (gid,)).fetchone()
+    if not row:
+        return jsonify({"error": "风格组不存在"}), 404
+    db.execute("UPDATE style_group SET is_active=0")
+    db.execute("UPDATE style_group SET is_active=1 WHERE id=?", (gid,))
+    db.execute("UPDATE settings SET value=? WHERE key='active_style_group'", (str(gid),))
+    db.commit()
+    return jsonify({"ok": True, "active_id": gid})
+
+
+@app.route("/api/badges/categorized")
+def api_badges_categorized():
+    """按6区域分类获取全部勋章，用于勋章墙全屏展示
+    区域1: 证书区（毕业证书+学位证书，预留位置）
+    区域2: 毕业要求勋章区（7枚 + 毕业勋章 + 学位勋章）
+    区域3-6: 4个学科分类区（通识类/学科基础/专业方向/实践类）
+    特殊: 开学典礼单独展示（不放入通识类）
+    """
+    db = get_db()
+
+    # 区域2: 毕业要求勋章（7枚 credit/completion + 2枚 special）
+    grad_reqs = db.execute(
+        "SELECT id, category, required_credits, obtained_credits, kind, done, medal_img "
+        "FROM grad_requirement ORDER BY CASE kind WHEN 'credit' THEN 0 WHEN 'completion' THEN 1 WHEN 'special' THEN 2 END, id"
+    ).fetchall()
+
+    # 区域3-6: 学科分类勋章（排除特殊勋章如开学典礼）
+    subjects = db.execute(
+        "SELECT id, name, credit, grad_category, medal_img, badge_special "
+        "FROM subject WHERE badge_special=0 ORDER BY grad_category, name"
+    ).fetchall()
+
+    # 特殊科目勋章（开学典礼等，单独展示）
+    special_subjects = db.execute(
+        "SELECT id, name, credit, grad_category, medal_img FROM subject WHERE badge_special=1 ORDER BY name"
+    ).fetchall()
+
+    # 按分类分组
+    categories = {}
+    cat_order = ["通识类", "学科基础", "专业方向", "实践类"]
+    for s in subjects:
+        cat = s["grad_category"] or "其他"
+        if cat not in categories:
+            categories[cat] = []
+        categories[cat].append(dict(s))
+
+    # 确保4个分类都存在（即使为空）
+    for cat in cat_order:
+        if cat not in categories:
+            categories[cat] = []
+
+    return jsonify({
+        "cert_zone": {
+            "title": "证书区",
+            "items": [
+                {"type": "diploma", "name": "毕业证书", "status": "reserved"},
+                {"type": "degree", "name": "学位证书", "status": "reserved"},
+            ]
+        },
+        "grad_req_zone": {
+            "title": "毕业要求勋章",
+            "items": rows_to_list(grad_reqs)
+        },
+        "subject_zones": [
+            {"title": cat, "items": categories.get(cat, [])} for cat in cat_order
+        ],
+        "special_zone": {
+            "title": "特殊纪念勋章",
+            "items": rows_to_list(special_subjects)
+        }
+    })
+
+
 @app.route("/api/subjects", methods=["POST"])
 def api_subject_create():
     db = get_db()
@@ -621,7 +716,7 @@ def api_subject_update(sid):
         return jsonify({"error": "科目不存在"}), 404
     data = request.get_json(silent=True) or {}
     allow = {"semester_id", "name", "credit", "location", "grad_category",
-             "assessment_method", "course_type", "medal_img"}
+             "assessment_method", "course_type", "medal_img", "style_group_id", "badge_special"}
     sets, vals = [], []
     for k, v in data.items():
         if k in allow:

@@ -395,6 +395,208 @@ table.data td .btn-danger.btn-sm:hover { border-color: var(--red); color: var(--
 #btn-login { width: 100%; margin-top: 6px; }
 .login-foot { margin-top: 14px; font-size: 11px; color: var(--muted); line-height: 1.5; }
 
+/* ===== 神迹风升级：6区域勋章墙 ===== */
+
+/* 风格组选择器 */
+.style-group-selector { display: inline-flex; align-items: center; gap: 6px; }
+.sg-btn {
+  padding: 4px 12px; font-size: 12px; border: 1px solid var(--line);
+  border-radius: 16px; background: #fff; cursor: pointer; transition: all .2s;
+  color: var(--muted);
+}
+.sg-btn:hover { border-color: #f5b301; color: #f5b301; }
+.sg-btn.active {
+  background: linear-gradient(135deg, #f5b301, #d4a017);
+  color: #fff; border-color: #f5b301;
+  box-shadow: 0 2px 8px rgba(245,179,1,.3);
+}
+
+/* 6区域容器 */
+#medal-wall-container { display: flex; flex-direction: column; gap: 18px; }
+
+/* 区域标题 */
+.medal-zone { }
+.zone-title {
+  font-size: 14px; font-weight: 700; color: var(--text);
+  margin-bottom: 10px; padding-bottom: 6px;
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, #f5b301, transparent) 1;
+  display: flex; align-items: center; gap: 8px;
+}
+.zone-count { font-size: 11px; font-weight: 400; }
+
+/* 勋章网格：统一大小 */
+.medal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 12px;
+}
+
+/* 单个勋章：统一大小 */
+.medal-item {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; padding: 8px 4px;
+  border-radius: 12px; transition: all .25s;
+  background: rgba(255,255,255,.03);
+}
+.medal-item:hover {
+  transform: translateY(-3px);
+  background: rgba(245,179,1,.06);
+  box-shadow: 0 6px 18px rgba(0,0,0,.1);
+}
+.medal-item.locked { opacity: .55; filter: grayscale(.7); }
+.medal-item.locked:hover { filter: grayscale(.3); opacity: .8; }
+
+/* 勋章圆形：统一尺寸 70px */
+.medal-circle {
+  width: 70px; height: 70px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  border: 3px solid #cbd5e1;
+  font-size: 28px; position: relative;
+  transition: all .25s;
+}
+.medal-item.earned .medal-circle {
+  border-color: #f5b301;
+  box-shadow: 0 0 14px rgba(245,179,1,.35), inset 0 0 10px rgba(245,179,1,.1);
+}
+.medal-inner { line-height: 1; }
+
+/* 特殊勋章放大：100px */
+.medal-item.medal-large { }
+.medal-large .medal-circle {
+  width: 100px; height: 100px; font-size: 40px;
+  border-width: 4px;
+}
+.medal-circle-gold {
+  background: linear-gradient(135deg, #fef3c7, #f5b301);
+  border-color: #d4a017 !important;
+  box-shadow: 0 0 20px rgba(245,179,1,.5), inset 0 0 15px rgba(255,255,255,.3) !important;
+}
+
+/* 勋章文字 */
+.medal-label {
+  font-size: 11px; font-weight: 600; color: var(--text);
+  margin-top: 6px; line-height: 1.3;
+  max-width: 85px; overflow: hidden; text-overflow: ellipsis;
+}
+.medal-large .medal-label { font-size: 13px; max-width: 110px; }
+.medal-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.medal-stars { font-size: 11px; margin-top: 3px; letter-spacing: 1px; }
+.medal-stars .gpa-empty { font-size: 9px; color: var(--muted); }
+
+/* 勋章进度条（学分类） */
+.medal-progress {
+  width: 60px; height: 4px; background: #e2e8f0;
+  border-radius: 2px; margin-top: 5px; overflow: hidden;
+}
+.medal-progress-bar {
+  height: 100%; background: linear-gradient(90deg, #f5b301, #d4a017);
+  border-radius: 2px; transition: width .5s;
+}
+
+/* 证书区 */
+.cert-zone { }
+.cert-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+.cert-slot {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 18px 12px; border-radius: 12px; text-align: center;
+  border: 2px dashed #cbd5e1; background: rgba(255,255,255,.03);
+  min-height: 120px; justify-content: center;
+}
+.cert-slot.reserved { opacity: .6; }
+.cert-icon { font-size: 36px; margin-bottom: 8px; }
+.cert-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.cert-status { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+/* 特殊纪念区 */
+.special-zone .medal-grid {
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+}
+
+/* ===== 神迹风主题 ===== */
+body.theme-miracle {
+  --bg: #0a1628;
+  --card-bg: rgba(15, 30, 55, .85);
+  --text: #e8e4d4;
+  --muted: #8b9aaf;
+  --line: rgba(245, 179, 1, .2);
+  --primary: #f5b301;
+  --primary-2: #d4a017;
+  background: linear-gradient(160deg, #0a1628 0%, #0d2137 40%, #0a1a2e 100%);
+  color: #e8e4d4;
+}
+body.theme-miracle .card {
+  background: rgba(15, 30, 55, .85);
+  border: 1px solid rgba(245, 179, 1, .15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .3);
+  backdrop-filter: blur(8px);
+}
+body.theme-miracle .card-head h3 { color: #f5b301; }
+body.theme-miracle .zone-title {
+  color: #f5b301;
+  border-image: linear-gradient(90deg, #f5b301, rgba(245,179,1,.1)) 1;
+}
+body.theme-miracle .medal-circle {
+  background: linear-gradient(135deg, #1a2f4a, #0d1f35);
+  border-color: rgba(245, 179, 1, .4);
+}
+body.theme-miracle .medal-item.earned .medal-circle {
+  background: linear-gradient(135deg, #2a3f1a, #1a2f0d);
+  border-color: #10b981;
+  box-shadow: 0 0 14px rgba(16, 185, 129, .4);
+}
+body.theme-miracle .medal-label { color: #e8e4d4; }
+body.theme-miracle .medal-sub { color: #8b9aaf; }
+body.theme-miracle .cert-slot {
+  border-color: rgba(245, 179, 1, .3);
+  background: rgba(245, 179, 1, .03);
+}
+body.theme-miracle .stat {
+  background: linear-gradient(135deg, rgba(245,179,1,.15), rgba(16,185,129,.1)) !important;
+  border: 1px solid rgba(245,179,1,.2);
+}
+body.theme-miracle .stat .n, body.theme-miracle .stat .l { color: #e8e4d4; }
+
+/* ===== 勋章墙全屏模式 ===== */
+.medal-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9998 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  overflow-y: auto !important;
+  padding: 20px 30px !important;
+  background: linear-gradient(160deg, #0a1628, #0d2137) !important;
+}
+.medal-fullscreen .card-head {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(10, 22, 40, .95);
+  padding: 10px 0; margin: -20px -30px 15px;
+  padding-left: 30px; padding-right: 30px;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(245,179,1,.2);
+}
+.medal-fullscreen #medal-wall-container {
+  max-width: 1400px; margin: 0 auto;
+}
+.medal-fullscreen .medal-grid {
+  grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+  gap: 10px;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .medal-grid { grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 8px; }
+  .medal-circle { width: 60px; height: 60px; font-size: 24px; }
+  .medal-large .medal-circle { width: 80px; height: 80px; font-size: 32px; }
+  .medal-label { font-size: 10px; max-width: 70px; }
+  .cert-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+}
+
 /* 顶栏用户区 */
 .user-area { display: flex; align-items: center; gap: 8px; margin-left: 16px; }
 #user-badge { background: linear-gradient(135deg, var(--primary), var(--primary-2)); color: #fff; }

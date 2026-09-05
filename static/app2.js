@@ -751,14 +751,193 @@ async function renderSubjectMedals() {
   }).join("");
 }
 
+/* ========== 神迹风升级：6区域勋章墙 ========== */
+
+// 当前激活风格组（1=默认风, 2=神迹风）
+let currentStyleGroup = 1;
+let medalFullscreen = false;
+
+async function renderMedalWall() {
+  const data = await api("/api/badges/categorized");
+  if (!data) return;
+
+  // 1. 证书区（预留毕业证书、学位证书位置）
+  const certGrid = $("#cert-grid");
+  certGrid.innerHTML = data.cert_zone.items.map((c) => `
+    <div class="cert-slot reserved" title="${escapeHtml(c.name)}（预留位置）">
+      <div class="cert-icon">📜</div>
+      <div class="cert-name">${escapeHtml(c.name)}</div>
+      <div class="cert-status">预留位置</div>
+    </div>
+  `).join("");
+
+  // 2. 毕业要求勋章区（7枚 + 毕业勋章 + 学位勋章）
+  const gradGrid = $("#grad-medal-grid");
+  let gradEarned = 0;
+  gradGrid.innerHTML = data.grad_req_zone.items.map((r) => {
+    const earned = r.kind === "completion" ? !!r.done :
+                   r.kind === "special" ? !!r.done :
+                   (r.required_credits > 0 && r.obtained_credits >= r.required_credits);
+    if (earned) gradEarned++;
+    const isSpecial = r.kind === "special";
+    const pct = r.required_credits ? Math.min(r.obtained_credits / r.required_credits * 100, 100) : 0;
+    return `<div class="medal-item ${earned ? "earned" : "locked"} ${isSpecial ? "medal-large" : ""}" title="${escapeHtml(r.category)}">
+      <div class="medal-circle">
+        <div class="medal-inner">${gradReqIcon(r.category)}</div>
+        ${isSpecial ? '<div class="medal-ring-gold"></div>' : ""}
+      </div>
+      <div class="medal-label">${escapeHtml(r.category)}</div>
+      ${r.kind === "credit" ? `<div class="medal-sub">${r.obtained_credits}/${r.required_credits}学分</div>` : ""}
+      ${r.kind === "completion" ? `<div class="medal-sub">${earned ? "已通过" : "未通过"}</div>` : ""}
+      ${r.kind === "special" ? `<div class="medal-sub">${earned ? "已获得" : "未获得"}</div>` : ""}
+      ${r.kind === "credit" ? `<div class="medal-progress"><div class="medal-progress-bar" style="width:${pct}%"></div></div>` : ""}
+    </div>`;
+  }).join("");
+
+  // 3-6. 四个学科分类区
+  const grades = await api("/api/grades").catch(() => []);
+  let subjectEarned = 0;
+  data.subject_zones.forEach((zone) => {
+    const grid = $("#zone-" + zone.title);
+    const countEl = $("#count-" + zone.title);
+    if (countEl) countEl.textContent = `(${zone.items.length}门)`;
+    if (!zone.items.length) {
+      grid.innerHTML = '<div class="empty" style="padding:20px;color:#94a3b8;">暂无科目</div>';
+      return;
+    }
+    grid.innerHTML = zone.items.map((s) => {
+      const g = (grades || []).find((x) => x.subject_id === s.id);
+      const earned = !!g;
+      if (earned) subjectEarned++;
+      const tier = earned ? gpaTier(g.score) : null;
+      const short = s.name.length > 6 ? s.name.slice(0, 6) + "…" : s.name;
+      return `<div class="medal-item ${earned ? "earned" : "locked"}" title="${escapeHtml(s.name)}${s.credit ? ` · ${s.credit}学分` : ""}">
+        <div class="medal-circle" style="${tier ? `border-color:${tier.color};box-shadow:0 0 12px ${tier.color}66` : ""}">
+          <div class="medal-inner" style="${tier ? `color:${tier.color}` : ""}">${subjectIcon(s.name, s.grad_category)}</div>
+        </div>
+        <div class="medal-label">${escapeHtml(short)}</div>
+        <div class="medal-sub">${s.credit ? s.credit + "学分" : ""}</div>
+        ${earned && tier ? `<div class="medal-stars">${starRowHtml(tier)}</div>` : `<div class="medal-stars"><span class="gpa-empty">未点亮</span></div>`}
+      </div>`;
+    }).join("");
+  });
+
+  // 特殊纪念勋章区（开学典礼等）
+  const specialGrid = $("#special-medal-grid");
+  specialGrid.innerHTML = data.special_zone.items.map((s) => {
+    const g = (grades || []).find((x) => x.subject_id === s.id);
+    const earned = !!g;
+    return `<div class="medal-item medal-large ${earned ? "earned" : "locked"}" title="${escapeHtml(s.name)}（特殊纪念勋章）">
+      <div class="medal-circle medal-circle-gold">
+        <div class="medal-inner">🎊</div>
+      </div>
+      <div class="medal-label">${escapeHtml(s.name)}</div>
+      <div class="medal-sub">特殊纪念</div>
+    </div>`;
+  }).join("");
+
+  // 统计
+  const total = data.grad_req_zone.items.length +
+                data.subject_zones.reduce((s, z) => s + z.items.length, 0) +
+                data.special_zone.items.length;
+  const earned = gradEarned + subjectEarned + (data.special_zone.items.length ? 1 : 0);
+  $("#medal-summary").textContent = `已获得 ${earned} / ${total}`;
+}
+
+// 毕业要求勋章图标
+function gradReqIcon(cat) {
+  const map = {
+    "通识类": "📖", "学科基础": "⚙️", "专业方向": "🔬", "实践类": "🛠️",
+    "英语四级": "🔤", "英语六级": "📚", "普通话二级": "🎤",
+    "毕业勋章": "🎓", "学位勋章": "🏛️"
+  };
+  return map[cat] || "🏅";
+}
+
+// 科目勋章图标（按科目名/分类匹配）
+function subjectIcon(name, cat) {
+  const n = name || "";
+  if (/数学|高数|微积分|线性代数|概率|复变|数理方程/.test(n)) return "∑";
+  if (/物理|力学|电磁/.test(n)) return "⚛";
+  if (/英语|大学英语/.test(n)) return "A";
+  if (/体育/.test(n)) return "🏃";
+  if (/电路|模电|数电|电子/.test(n)) return "⚡";
+  if (/信号|通信|信息论|DSP|数字信号/.test(n)) return "📡";
+  if (/单片机|微机|嵌入式/.test(n)) return "🔌";
+  if (/计算机|C\+\+|程序|数据结构|算法/.test(n)) return "💻";
+  if (/网络|组网|安全/.test(n)) return "🌐";
+  if (/图像|处理/.test(n)) return "🖼";
+  if (/电磁场|微波|高频/.test(n)) return "〰";
+  if (/Matlab|MATLAB/.test(n)) return "📊";
+  if (/思政|政治|马克思|毛泽东|习近平|历史|纲要|形势/.test(n)) return "📕";
+  if (/军事|国防|安全/.test(n)) return "🛡";
+  if (/劳动|实践|实训|实习|工艺|设计/.test(n)) return "🔧";
+  if (/心理|健康|卫生/.test(n)) return "❤️";
+  if (/创业|就业|职业|生涯/.test(n)) return "🚀";
+  if (/科技|文献|写作/.test(n)) return "✍";
+  return "🎓";
+}
+
+// 星星行HTML（用于科目勋章）
+function starRowHtml(tier) {
+  if (!tier) return "";
+  let stars = "";
+  for (let i = 0; i < 5; i++) {
+    stars += `<span style="color:${i < tier.stars ? tier.color : "#334155"}">★</span>`;
+  }
+  return stars;
+}
+
+// 风格组切换
+async function switchStyleGroup(id) {
+  currentStyleGroup = id;
+  await api("/api/style_groups/activate", { method: "POST", body: JSON.stringify({ id }) });
+  // 更新按钮状态
+  document.querySelectorAll(".sg-btn").forEach((b) => {
+    b.classList.toggle("active", parseInt(b.dataset.sg) === id);
+  });
+  // 切换body主题类
+  document.body.classList.toggle("theme-miracle", id === 2);
+  document.body.classList.toggle("theme-default", id === 1);
+  // 重新渲染勋章墙
+  renderMedalWall();
+}
+
+// 勋章墙全屏切换
+function toggleMedalFullscreen() {
+  medalFullscreen = !medalFullscreen;
+  const card = $("#medal-wall-card");
+  const container = $("#medal-wall-container");
+  if (medalFullscreen) {
+    card.classList.add("medal-fullscreen");
+    document.body.style.overflow = "hidden";
+  } else {
+    card.classList.remove("medal-fullscreen");
+    document.body.style.overflow = "";
+  }
+}
+
+// 初始化风格组状态
+async function initStyleGroup() {
+  const data = await api("/api/style_groups").catch(() => null);
+  if (data) {
+    currentStyleGroup = data.active_id;
+    document.querySelectorAll(".sg-btn").forEach((b) => {
+      b.classList.toggle("active", parseInt(b.dataset.sg) === currentStyleGroup);
+    });
+    document.body.classList.toggle("theme-miracle", currentStyleGroup === 2);
+    document.body.classList.toggle("theme-default", currentStyleGroup === 1);
+  }
+}
+
 async function renderGradPage() {
   const [reqs, gp] = await Promise.all([
     api("/api/grad_requirements"),
     api("/api/grad_progress").catch(() => null),
   ]);
   renderGradStats();
-  renderMedals();
-  renderSubjectMedals();
+  initStyleGroup();
+  renderMedalWall();
   const credits = reqs.filter((r) => r.kind !== "completion");
   const completions = reqs.filter((r) => r.kind === "completion");
 

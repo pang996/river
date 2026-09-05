@@ -176,15 +176,58 @@
       <div class="stat-grid" id="grad-stat-grid"></div>
     </div>
 
-    <div class="card">
+    <div class="card" id="medal-wall-card">
       <div class="card-head">
         <h3>🏅 勋章墙</h3>
-        <span class="muted" id="medal-summary">已获得 0 / 7</span>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <div class="style-group-selector">
+            <span class="muted" style="font-size:11px;">风格：</span>
+            <button class="sg-btn active" data-sg="1" onclick="switchStyleGroup(1)">默认风</button>
+            <button class="sg-btn" data-sg="2" onclick="switchStyleGroup(2)">神迹风</button>
+          </div>
+          <span class="muted" id="medal-summary">已获得 0 / 80</span>
+          <button class="btn-sm" onclick="toggleMedalFullscreen()" title="全屏查看勋章墙">⛶ 全屏</button>
+        </div>
       </div>
-      <div class="medal-section-title">毕业要求勋章</div>
-      <div class="medal-wall" id="medal-wall"></div>
-      <div class="medal-section-title">课程科目勋章 <span class="muted" id="subject-medal-summary" style="font-size:11px">按成绩点亮</span></div>
-      <div class="medal-wall" id="subject-medal-wall"></div>
+
+      <!-- 6区域勋章墙容器 -->
+      <div id="medal-wall-container">
+        <!-- 区域1: 证书区 -->
+        <div class="medal-zone cert-zone">
+          <div class="zone-title">📜 证书区 <span class="muted" style="font-size:11px;font-weight:400;">（预留位置）</span></div>
+          <div class="cert-grid" id="cert-grid"></div>
+        </div>
+
+        <!-- 区域2: 毕业要求勋章 -->
+        <div class="medal-zone">
+          <div class="zone-title">🎖️ 毕业要求勋章</div>
+          <div class="medal-grid" id="grad-medal-grid"></div>
+        </div>
+
+        <!-- 区域3-6: 4个学科分类 -->
+        <div class="medal-zone">
+          <div class="zone-title">📖 通识类 <span class="muted zone-count" id="count-通识类"></span></div>
+          <div class="medal-grid" id="zone-通识类"></div>
+        </div>
+        <div class="medal-zone">
+          <div class="zone-title">⚙️ 学科基础 <span class="muted zone-count" id="count-学科基础"></span></div>
+          <div class="medal-grid" id="zone-学科基础"></div>
+        </div>
+        <div class="medal-zone">
+          <div class="zone-title">🔬 专业方向 <span class="muted zone-count" id="count-专业方向"></span></div>
+          <div class="medal-grid" id="zone-专业方向"></div>
+        </div>
+        <div class="medal-zone">
+          <div class="zone-title">🛠️ 实践类 <span class="muted zone-count" id="count-实践类"></span></div>
+          <div class="medal-grid" id="zone-实践类"></div>
+        </div>
+
+        <!-- 特殊纪念勋章（开学典礼等，不放入学科分类） -->
+        <div class="medal-zone special-zone">
+          <div class="zone-title">✨ 特殊纪念勋章</div>
+          <div class="medal-grid" id="special-medal-grid"></div>
+        </div>
+      </div>
     </div>
   </section>
 
