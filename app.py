@@ -921,8 +921,9 @@ def api_settings():
 
 # ---------------- API：手机推送配置（存 settings 表） ----------------
 
-PUSH_KEYS = ["notify_provider", "notify_token", "qmsg_target",
-             "pushplus_topic", "pushplus_template", "pushplus_channel", "pushplus_webhook",
+PUSH_KEYS = ["notify_provider",
+             "pushplus_token", "pushplus_topic", "pushplus_template", "pushplus_channel", "pushplus_webhook",
+             "qmsg_key", "qmsg_target",
              "wecom_corpid", "wecom_secret", "wecom_agentid", "wecom_touser"]
 
 
@@ -973,7 +974,7 @@ def send_push_msg(title, content, cfg=None):
 
     try:
         if provider == "pushplus":
-            token = cfg.get("notify_token") or ""
+            token = cfg.get("pushplus_token") or ""
             if not token:
                 return False, "未配置 PushPlus token（微信通道）"
             payload = {
@@ -996,7 +997,7 @@ def send_push_msg(title, content, cfg=None):
             return (r.get("code") == 200), r.get("msg") or str(r)
 
         if provider == "qmsg":
-            key = cfg.get("notify_token") or ""
+            key = cfg.get("qmsg_key") or ""
             target = (cfg.get("qmsg_target") or "").strip().replace("，", ",")
             if not key:
                 return False, "未配置 Qmsg key"

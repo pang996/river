@@ -1052,11 +1052,12 @@ const SETTINGS_DESC = {
   "cloud_sync_url": "云端同步地址",
   "grad_credit_weight": "毕业学分权重",
   "notify_provider": "推送通道（pushplus / qmsg / wecom）",
-  "notify_token": "推送 Token（PushPlus token 或 Qmsg key）",
+  "pushplus_token": "PushPlus Token（微信接收，与微信账号绑定）",
   "pushplus_channel": "PushPlus 发送渠道（wechat 推送到微信 / webhook 自定义机器人）",
   "pushplus_template": "PushPlus 消息模板（html 富文本 / txt 纯文本 / markdown）",
   "pushplus_topic": "PushPlus 群组编码（空=发给个人，填了=发到指定群组）",
   "pushplus_webhook": "PushPlus 自定义机器人地址（仅渠道=webhook 时生效）",
+  "qmsg_key": "Qmsg Key（QQ 接收）",
   "qmsg_target": "Qmsg 目标 QQ 号（可多个，逗号分隔）",
   "sync_enabled": "是否启用云端同步（1=启用，0=关闭）",
   "sync_interval_min": "云端同步间隔（分钟）",
@@ -1079,11 +1080,12 @@ async function renderSettings() {
 async function loadPushConfig() {
   const cfg = await api("/api/push_config");
   $("#pf-provider").value = cfg.notify_provider || "pushplus";
-  $("#pf-token").value = cfg.notify_token || "";
+  $("#pf-pushplus-token").value = cfg.pushplus_token || "";
   $("#pf-topic").value = cfg.pushplus_topic || "";
   $("#pf-template").value = cfg.pushplus_template || "html";
   $("#pf-channel").value = cfg.pushplus_channel || "wechat";
   $("#pf-webhook").value = cfg.pushplus_webhook || "";
+  $("#pf-qmsg-key").value = cfg.qmsg_key || "";
   $("#pf-qmsg-target").value = cfg.qmsg_target || "";
   $("#pf-wecom-corpid").value = cfg.wecom_corpid || "";
   $("#pf-wecom-secret").value = cfg.wecom_secret || "";
@@ -1109,11 +1111,12 @@ function updatePushRows() {
 async function savePushConfig() {
   const payload = {
     notify_provider: $("#pf-provider").value,
-    notify_token: $("#pf-token").value.trim(),
+    pushplus_token: $("#pf-pushplus-token").value.trim(),
     pushplus_topic: $("#pf-topic").value.trim(),
     pushplus_template: $("#pf-template").value,
     pushplus_channel: $("#pf-channel").value,
     pushplus_webhook: $("#pf-webhook").value.trim(),
+    qmsg_key: $("#pf-qmsg-key").value.trim(),
     qmsg_target: $("#pf-qmsg-target").value.trim(),
     wecom_corpid: $("#pf-wecom-corpid").value.trim(),
     wecom_secret: $("#pf-wecom-secret").value.trim(),
