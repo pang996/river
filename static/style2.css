@@ -1030,7 +1030,7 @@ body.theme-miracle .welcome-subtitle {
 .wt-bg-layer {
   position: absolute;
   inset: 0;
-  background: url('bg/worldtree.png') center/cover no-repeat;
+  background: url('bg/achievement.jpg') center/cover no-repeat;
   opacity: 0.35;
   z-index: 0;
   pointer-events: none;
