@@ -766,18 +766,20 @@ async function renderMedalWall() {
 
   // 1. 证书区（预留毕业证书、学位证书位置）
   const certGrid = $("#cert-grid");
-  certGrid.innerHTML = data.cert_zone.items.map((c) => `
-    <div class="cert-slot reserved" title="${escapeHtml(c.name)}（预留位置）">
-      <div class="cert-icon">📜</div>
-      <div class="cert-name">${escapeHtml(c.name)}</div>
-      <div class="cert-status">预留位置</div>
-    </div>
-  `).join("");
+  if (certGrid) {
+    certGrid.innerHTML = data.cert_zone.items.map((c) => `
+      <div class="cert-slot reserved" title="${escapeHtml(c.name)}（预留位置）">
+        <div class="cert-icon">📜</div>
+        <div class="cert-name">${escapeHtml(c.name)}</div>
+        <div class="cert-status">预留位置</div>
+      </div>
+    `).join("");
+  }
 
   // 2. 毕业要求勋章区（7枚 + 毕业勋章 + 学位勋章）
   const gradGrid = $("#grad-medal-grid");
   let gradEarned = 0;
-  gradGrid.innerHTML = data.grad_req_zone.items.map((r) => {
+  const gradHtml = data.grad_req_zone.items.map((r) => {
     const earned = r.kind === "completion" ? !!r.done :
                    r.kind === "special" ? !!r.done :
                    (r.required_credits > 0 && r.obtained_credits >= r.required_credits);
@@ -796,19 +798,25 @@ async function renderMedalWall() {
       ${r.kind === "credit" ? `<div class="medal-progress"><div class="medal-progress-bar" style="width:${pct}%"></div></div>` : ""}
     </div>`;
   }).join("");
+  if (gradGrid) gradGrid.innerHTML = gradHtml;
 
-  // 3-6. 四个学科分类区
+  // 树干毕业要求勋章（首页世界树）
+  const trunkGrid = $("#wt-trunk-medals");
+  if (trunkGrid) trunkGrid.innerHTML = gradHtml;
+
+  // 3-6. 四个学科分类区（同时更新成就页和首页世界树）
   const grades = await api("/api/grades").catch(() => []);
   let subjectEarned = 0;
   data.subject_zones.forEach((zone) => {
-    const grid = $("#zone-" + zone.title);
-    const countEl = $("#count-" + zone.title);
-    if (countEl) countEl.textContent = `(${zone.items.length}门)`;
+    // 同时获取成就页和首页的元素
+    const grids = document.querySelectorAll("#zone-" + zone.title);
+    const countEls = document.querySelectorAll("#count-" + zone.title);
+    countEls.forEach(el => { el.textContent = `(${zone.items.length}门)`; });
     if (!zone.items.length) {
-      grid.innerHTML = '<div class="empty" style="padding:20px;color:#94a3b8;">暂无科目</div>';
+      grids.forEach(grid => { grid.innerHTML = '<div class="empty" style="padding:20px;color:#94a3b8;">暂无科目</div>'; });
       return;
     }
-    grid.innerHTML = zone.items.map((s) => {
+    const html = zone.items.map((s) => {
       const g = (grades || []).find((x) => x.subject_id === s.id);
       const earned = !!g;
       if (earned) subjectEarned++;
@@ -830,11 +838,12 @@ async function renderMedalWall() {
         ${earned && tier ? `<div class="medal-stars">${starRowHtml(tier)}</div>` : `<div class="medal-stars"><span class="gpa-empty">未点亮</span></div>`}
       </div>`;
     }).join("");
+    grids.forEach(grid => { grid.innerHTML = html; });
   });
 
   // 特殊纪念勋章区（开学典礼等）
   const specialGrid = $("#special-medal-grid");
-  specialGrid.innerHTML = data.special_zone.items.map((s) => {
+  const specialHtml = data.special_zone.items.map((s) => {
     const g = (grades || []).find((x) => x.subject_id === s.id);
     const earned = !!g;
     return `<div class="medal-item medal-large ${earned ? "earned" : "locked"}" title="${escapeHtml(s.name)}（特殊纪念勋章）">
@@ -845,6 +854,10 @@ async function renderMedalWall() {
       <div class="medal-sub">特殊纪念</div>
     </div>`;
   }).join("");
+  if (specialGrid) specialGrid.innerHTML = specialHtml;
+  // 首页树冠特殊纪念区
+  const wtSpecialGrid = $("#wt-special-medals");
+  if (wtSpecialGrid) wtSpecialGrid.innerHTML = specialHtml;
 
   // 石柱：毕业勋章和学位勋章
   const gradMedal = data.grad_req_zone.items.find(r => r.category === "毕业勋章");
@@ -944,27 +957,91 @@ function gradReqIcon(cat) {
 // 科目勋章图标（按科目名/分类匹配）
 // 勋章图片映射表（科目名关键词 -> 图片路径）
 const BADGE_IMG_MAP = {
+  // ===== 专业方向（18门）=====
+  "Matlab与通信系统分析": "badges/pro1_r0c0.png",
+  "Matlab语言及应用": "badges/pro1_r0c1.png",
+  "信号与系统分析": "badges/pro1_r0c2.png",
+  "信息论基础": "badges/pro1_r1c0.png",
+  "单片机原理": "badges/pro1_r1c1.png",
+  "微机原理与接口技术": "badges/pro1_r1c2.png",
+  "数字信号处理": "badges/pro2_r0c0.png",
+  "数字图像处理": "badges/pro2_r0c1.png",
+  "数据结构": "badges/pro2_r0c2.png",
+  "电子信息工程概论": "badges/pro2_r1c0.png",
+  "电磁场与电磁波": "badges/pro2_r1c1.png",
+  "科技文献写作": "badges/pro2_r1c2.png",
+  "计算机网络(双语)": "badges/pro3_r0c0.png",
+  "计算机网络安全": "badges/pro3_r0c1.png",
+  "计算机网络组网技术": "badges/pro3_r0c2.png",
+  "通信原理": "badges/pro3_r0c3.png",
+  "高频电子线路": "badges/pro3_r0c4.png",
+
+  // ===== 学科基础（5门）=====
+  "C++课程设计": "badges/base1_r0c0.png",
+  "数字电子技术基础": "badges/base1_r0c1.png",
+  "模拟电子技术基础": "badges/base1_r0c2.png",
+  "电路原理": "badges/base1_r1c0.png",
+  "计算机引论": "badges/base1_r1c1.png",
+
+  // ===== 实践类（12门）=====
+  "C++程序设计": "badges/base1_r1c2.png",
+  "军训": "badges/prac2_r0c0.png",
+  "劳动实践(一)": "badges/prac2_r0c1.png",
+  "劳动实践(二)": "badges/prac2_r0c2.png",
+  "劳动实践(三)": "badges/prac2_r1c0.png",
+  "单片机课程设计": "badges/prac2_r1c1.png",
+  "工程实训": "badges/prac2_r1c2.png",
+  "思想政治理论实践课": "badges/prac3_r0c0.png",
+  "毕业设计与实习": "badges/prac3_r0c1.png",
+  "电子工艺实习": "badges/prac3_r0c2.png",
+  "电子系统综合设计": "badges/prac3_r0c3.png",
+  "综合课程设计": "badges/prac3_r0c4.png",
+
+  // ===== 通识类（36门）=====
+  // 思政历史类
+  "思想政治理论课1-1": "badges/gen1_r0c0.png",
+  "马克思主义基本原理": "badges/gen1_r0c1.png",
+  "中国近现代史纲要": "badges/gen1_r0c2.png",
+  "毛泽东思想和中国特色社会主义理论体系概论": "badges/gen1_r1c0.png",
+  "习近平新时代中国特色社会主义思想概论": "badges/gen1_r1c1.png",
+  "大学思政": "badges/gen1_r1c2.png",
+  // 形势政策与军事
+  "形势与政策(一)": "badges/gen2_r0c0.png",
+  "形势与政策(二)": "badges/gen2_r0c1.png",
+  "形势与政策(三)": "badges/gen2_r0c2.png",
+  "形势与政策(四)": "badges/gen2_r1c0.png",
+  "军事理论": "badges/gen2_r1c1.png",
+  "国家安全讲座": "badges/gen2_r1c2.png",
   // 数学类
-  "高等数学B": "badges/group_math_r0c0.png",
-  "高等数学B(二)": "badges/group_math_r0c1.png",
-  "线性代数": "badges/group_math_r0c2.png",
-  "概率论与数理统计A": "badges/group_math_r1c0.png",
-  "复变函数与积分变换": "badges/group_math_r1c1.png",
-  "数学物理方程与特殊函数": "badges/group_math_r1c2.png",
-  // 电子信息类
-  "Matlab与通信系统分析": "badges/group_ee_r0c0.png",
-  "Matlab语言及应用": "badges/group_ee_r0c1.png",
-  "信号与系统分析": "badges/group_ee_r0c2.png",
-  "信息论基础": "badges/group_ee_r1c0.png",
-  "单片机原理及应用": "badges/group_ee_r1c1.png",
-  "微机原理与接口技术": "badges/group_ee_r1c2.png",
-  // 学科基础类
-  "C++课程设计": "badges/group_base_r0c0.png",
-  "数字电子技术": "badges/group_base_r0c1.png",
-  "模拟电子技术": "badges/group_base_r0c2.png",
-  "电路原理": "badges/group_base_r1c0.png",
-  "计算机引论": "badges/group_base_r1c1.png",
-  "C++程序设计": "badges/group_base_r1c2.png",
+  "高等数学B": "badges/gen3_r0c0.png",
+  "高等数学B(二)": "badges/gen3_r0c1.png",
+  "线性代数": "badges/gen3_r0c2.png",
+  "概率论与数理统计A": "badges/gen3_r1c0.png",
+  "复变函数与积分变换": "badges/gen3_r1c1.png",
+  "数学物理方程与特殊函数": "badges/gen3_r1c2.png",
+  // 物理英语类
+  "大学物理-力学": "badges/gen4_r0c0.png",
+  "大学物理-电磁学": "badges/gen4_r0c1.png",
+  "物理实验(一)": "badges/gen4_r0c2.png",
+  "大学英语": "badges/gen4_r1c0.png",
+  "大学英语(二)": "badges/gen4_r1c1.png",
+  "校史参观": "badges/gen4_r1c2.png",
+  // 体育健康类
+  "体育一": "badges/gen5_r0c0.png",
+  "体育(二)": "badges/gen5_r0c1.png",
+  "体育(三)": "badges/gen5_r0c2.png",
+  "体育(四)": "badges/gen5_r1c0.png",
+  "健康教育": "badges/gen5_r1c1.png",
+  "心理健康教育": "badges/gen5_r1c2.png",
+  // 职业素养类
+  "创业基础": "badges/gen6_r0c0.png",
+  "劳动教育": "badges/gen6_r0c1.png",
+  "就业指导": "badges/gen6_r0c2.png",
+  "职业生涯与发展规划": "badges/gen6_r1c0.png",
+  "校园安全": "badges/gen6_r1c1.png",
+  "学生社区参观": "badges/gen6_r1c2.png",
+  // 特殊纪念
+  "开学典礼": "badges/gen7_r0c0.png",
 };
 
 // 根据科目名获取勋章图片路径
