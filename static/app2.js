@@ -1046,11 +1046,33 @@ function refreshAfterGrade() {
 }
 
 /* ---------- 推送配置（只读） ---------- */
+/* settings 表配置项中文说明映射 */
+const SETTINGS_DESC = {
+  "app_base_url": "应用基础 URL",
+  "cloud_sync_url": "云端同步地址",
+  "grad_credit_weight": "毕业学分权重",
+  "notify_provider": "推送通道（pushplus / qmsg / wecom）",
+  "notify_token": "推送 Token（PushPlus token 或 Qmsg key）",
+  "pushplus_channel": "PushPlus 发送渠道（wechat 推送到微信 / webhook 自定义机器人）",
+  "pushplus_template": "PushPlus 消息模板（html 富文本 / txt 纯文本 / markdown）",
+  "pushplus_topic": "PushPlus 群组编码（空=发给个人，填了=发到指定群组）",
+  "pushplus_webhook": "PushPlus 自定义机器人地址（仅渠道=webhook 时生效）",
+  "qmsg_target": "Qmsg 目标 QQ 号（可多个，逗号分隔）",
+  "sync_enabled": "是否启用云端同步（1=启用，0=关闭）",
+  "sync_interval_min": "云端同步间隔（分钟）",
+  "sync_mode": "同步模式（both 双向 / upload 上传 / download 下载）",
+  "sync_token": "云端同步令牌",
+  "wecom_agentid": "企业微信应用 ID（agentid）",
+  "wecom_corpid": "企业微信企业 ID（corpid）",
+  "wecom_secret": "企业微信应用密钥（secret）",
+  "wecom_touser": "企业微信接收人（touser，@all=全部成员）",
+};
+
 async function renderSettings() {
   const settings = await api("/api/settings");
   const st = $("#settings-table");
-  st.innerHTML = "<tr><th>配置项</th><th>值</th></tr>" + settings.map((x) =>
-    `<tr><td>${escapeHtml(x.key)}</td><td>${escapeHtml(x.value || "")}</td></tr>`).join("");
+  st.innerHTML = "<tr><th>配置项</th><th>值</th><th>说明</th></tr>" + settings.map((x) =>
+    `<tr><td>${escapeHtml(x.key)}</td><td>${escapeHtml(x.value || "")}</td><td class="muted" style="font-size:12px">${escapeHtml(SETTINGS_DESC[x.key] || "")}</td></tr>`).join("");
 }
 
 /* ---------- 推送设置（存 settings 表，网页录入） ---------- */
