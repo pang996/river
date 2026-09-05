@@ -1058,6 +1058,10 @@ async function loadPushConfig() {
   const cfg = await api("/api/push_config");
   $("#pf-provider").value = cfg.notify_provider || "pushplus";
   $("#pf-token").value = cfg.notify_token || "";
+  $("#pf-topic").value = cfg.pushplus_topic || "";
+  $("#pf-template").value = cfg.pushplus_template || "html";
+  $("#pf-channel").value = cfg.pushplus_channel || "wechat";
+  $("#pf-webhook").value = cfg.pushplus_webhook || "";
   $("#pf-qmsg-target").value = cfg.qmsg_target || "";
   $("#pf-wecom-corpid").value = cfg.wecom_corpid || "";
   $("#pf-wecom-secret").value = cfg.wecom_secret || "";
@@ -1066,12 +1070,16 @@ async function loadPushConfig() {
   updatePushRows();
 }
 
-/* 按通道只显示对应输入行 */
+/* 按通道只显示对应输入行；webhook 行仅在 pushplus + webhook 渠道时显示 */
 function updatePushRows() {
   const p = $("#pf-provider").value;
+  const ch = $("#pf-channel") ? $("#pf-channel").value : "wechat";
   [["pf-pushplus", "pushplus"], ["pf-qmsg", "qmsg"], ["pf-wecom", "wecom"]].forEach(([cls, name]) => {
     document.querySelectorAll("." + cls).forEach((el) => {
-      el.style.display = (p === name) ? "" : "none";
+      const isWebhookRow = el.classList.contains("pf-pushplus-webhook");
+      let show = (p === name);
+      if (isWebhookRow) show = (p === "pushplus" && ch === "webhook");
+      el.style.display = show ? "" : "none";
     });
   });
 }
@@ -1080,6 +1088,10 @@ async function savePushConfig() {
   const payload = {
     notify_provider: $("#pf-provider").value,
     notify_token: $("#pf-token").value.trim(),
+    pushplus_topic: $("#pf-topic").value.trim(),
+    pushplus_template: $("#pf-template").value,
+    pushplus_channel: $("#pf-channel").value,
+    pushplus_webhook: $("#pf-webhook").value.trim(),
     qmsg_target: $("#pf-qmsg-target").value.trim(),
     wecom_corpid: $("#pf-wecom-corpid").value.trim(),
     wecom_secret: $("#pf-wecom-secret").value.trim(),
@@ -1458,6 +1470,7 @@ $("#f-semester").onchange = (e) => fillSubjectOptions(e.target.value);
 $("#btn-cg-add").onclick = () => { $("#course-group-modal").classList.remove("show"); openCourseModal(null, detailSemesterId, cgSubjectId); };
 $("#btn-cg-close").onclick = () => $("#course-group-modal").classList.remove("show");
 $("#pf-provider").onchange = updatePushRows;
+$("#pf-channel").onchange = updatePushRows;
 $("#btn-push-save").onclick = savePushConfig;
 $("#btn-push-test").onclick = testPush;
 $("#btn-add-event").onclick = openEventModal;

@@ -922,6 +922,7 @@ def api_settings():
 # ---------------- API：手机推送配置（存 settings 表） ----------------
 
 PUSH_KEYS = ["notify_provider", "notify_token", "qmsg_target",
+             "pushplus_topic", "pushplus_template", "pushplus_channel", "pushplus_webhook",
              "wecom_corpid", "wecom_secret", "wecom_agentid", "wecom_touser"]
 
 
@@ -975,11 +976,20 @@ def send_push_msg(title, content, cfg=None):
             token = cfg.get("notify_token") or ""
             if not token:
                 return False, "未配置 PushPlus token（微信通道）"
-            payload = _json.dumps({
+            payload = {
                 "token": token, "title": title, "content": content,
-            }, ensure_ascii=False).encode("utf-8")
+                # 模板：html（富文本）/ txt（纯文本）/ markdown
+                "template": cfg.get("pushplus_template") or "html",
+                # 渠道：wechat（推送到微信）/ webhook（自定义机器人）
+                "channel": cfg.get("pushplus_channel") or "wechat",
+            }
+            if cfg.get("pushplus_topic"):
+                payload["topic"] = cfg["pushplus_topic"]     # 群组编码
+            if cfg.get("pushplus_webhook") and payload["channel"] == "webhook":
+                payload["webhook"] = cfg["pushplus_webhook"]  # 自定义机器人地址
+            body = _json.dumps(payload, ensure_ascii=False).encode("utf-8")
             req = urllib.request.Request(
-                "https://www.pushplus.plus/send", data=payload,
+                "https://www.pushplus.plus/send", data=body,
                 headers={"Content-Type": "application/json"})
             with urllib.request.urlopen(req, timeout=10) as resp:
                 r = _json.loads(resp.read().decode("utf-8"))

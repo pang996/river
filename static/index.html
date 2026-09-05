@@ -204,6 +204,21 @@
         </div>
         <div class="pf-row pf-pushplus pf-qmsg"><label>Token / Key *</label>
           <input id="pf-token" placeholder="PushPlus token 或 Qmsg key"></div>
+        <div class="pf-row pf-pushplus"><label>群组编码 topic（可选，发给指定群组）</label>
+          <input id="pf-topic" placeholder="不填则发给个人"></div>
+        <div class="pf-row pf-pushplus"><label>消息模板</label>
+          <select id="pf-template">
+            <option value="html">html（支持富文本）</option>
+            <option value="txt">txt（纯文本）</option>
+            <option value="markdown">markdown</option>
+          </select></div>
+        <div class="pf-row pf-pushplus"><label>发送渠道</label>
+          <select id="pf-channel">
+            <option value="wechat">wechat（推送到微信）</option>
+            <option value="webhook">webhook（自定义机器人）</option>
+          </select></div>
+        <div class="pf-row pf-pushplus pf-pushplus-webhook"><label>Webhook 地址（渠道=webhook 时）</label>
+          <input id="pf-webhook" placeholder="https://..."></div>
         <div class="pf-row pf-qmsg"><label>QQ 目标（可多个，逗号分隔）</label>
           <input id="pf-qmsg-target"></div>
         <div class="pf-row pf-wecom"><label>企业 ID（corpid）</label>
