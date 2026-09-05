@@ -1716,4 +1716,5 @@ $("#btn-pw-save").onclick = doChangePw;
 (async function init() {
   if (!(await checkAuth())) return; // 未登录：停在登录页
   await reloadAll();
+  initStyleGroup(); // 全局初始化风格组（登录后立即应用）
 })();

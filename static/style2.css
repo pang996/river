@@ -600,3 +600,342 @@ body.theme-miracle .stat .n, body.theme-miracle .stat .l { color: #e8e4d4; }
 /* 顶栏用户区 */
 .user-area { display: flex; align-items: center; gap: 8px; margin-left: 16px; }
 #user-badge { background: linear-gradient(135deg, var(--primary), var(--primary-2)); color: #fff; }
+
+/* ============================================================
+   神迹风 V2：真正落地背景图 + 精美勋章样式
+   ============================================================ */
+
+/* --- 全局：神迹风背景（世界树暗纹 + 深墨绿） --- */
+body.theme-miracle {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(245,179,1,.08) 0%, transparent 50%),
+    linear-gradient(160deg, #0a1628 0%, #0d2137 40%, #0a1a2e 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* --- 各页面 section 背景图 --- */
+body.theme-miracle #tab-schedule {
+  background: linear-gradient(rgba(10,22,40,.88), rgba(10,22,40,.92)),
+              url('bg/schedule.jpg') center/cover no-repeat fixed;
+  min-height: calc(100vh - 60px);
+}
+body.theme-miracle #tab-courses,
+body.theme-miracle #tab-semester-detail {
+  background: linear-gradient(rgba(10,22,40,.88), rgba(10,22,40,.92)),
+              url('bg/schedule.jpg') center/cover no-repeat fixed;
+  min-height: calc(100vh - 60px);
+}
+body.theme-miracle #tab-events {
+  background: linear-gradient(rgba(10,22,40,.88), rgba(10,22,40,.92)),
+              url('bg/data.jpg') center/cover no-repeat fixed;
+  min-height: calc(100vh - 60px);
+}
+body.theme-miracle #tab-grad {
+  background: linear-gradient(rgba(10,22,40,.85), rgba(10,22,40,.90)),
+              url('bg/achievement.jpg') center/cover no-repeat fixed;
+  min-height: calc(100vh - 60px);
+}
+body.theme-miracle #tab-data {
+  background: linear-gradient(rgba(10,22,40,.88), rgba(10,22,40,.92)),
+              url('bg/data.jpg') center/cover no-repeat fixed;
+  min-height: calc(100vh - 60px);
+}
+
+/* --- 登录页世界树背景 --- */
+body.theme-miracle #login-mask {
+  background:
+    linear-gradient(rgba(10,22,40,.55), rgba(10,22,40,.75)),
+    url('bg/login.jpg') center/cover no-repeat !important;
+}
+body.theme-miracle .login-card {
+  background: rgba(15, 30, 55, .85) !important;
+  border: 1px solid rgba(245,179,1,.3);
+  box-shadow: 0 0 40px rgba(245,179,1,.2), 0 18px 48px rgba(0,0,0,.5) !important;
+  backdrop-filter: blur(10px);
+}
+body.theme-miracle .login-card h2 { color: #f5b301 !important; text-shadow: 0 0 10px rgba(245,179,1,.5); }
+body.theme-miracle .login-card input {
+  background: rgba(10,22,40,.6) !important;
+  border: 1px solid rgba(245,179,1,.3) !important;
+  color: #e8e4d4 !important;
+}
+body.theme-miracle .login-card input:focus {
+  border-color: #f5b301 !important;
+  box-shadow: 0 0 0 3px rgba(245,179,1,.15) !important;
+}
+
+/* --- 神迹风卡片：毛玻璃 + 金色边框 --- */
+body.theme-miracle .card {
+  background: rgba(15, 30, 55, .75) !important;
+  border: 1px solid rgba(245, 179, 1, .2) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(245,179,1,.1) !important;
+  backdrop-filter: blur(8px);
+}
+body.theme-miracle .card-head h3 {
+  color: #f5b301 !important;
+  text-shadow: 0 0 8px rgba(245,179,1,.3);
+}
+body.theme-miracle .zone-title {
+  color: #f5b301 !important;
+  border-image: linear-gradient(90deg, #f5b301, rgba(245,179,1,.1)) 1 !important;
+  text-shadow: 0 0 6px rgba(245,179,1,.3);
+}
+
+/* ============================================================
+   神迹风精美勋章样式（模拟预览图效果）
+   ============================================================ */
+
+/* 勋章容器 */
+body.theme-miracle .medal-item {
+  background: transparent !important;
+  padding: 4px 2px !important;
+}
+body.theme-miracle .medal-item:hover {
+  background: rgba(245,179,1,.05) !important;
+  transform: translateY(-4px) scale(1.05);
+}
+
+/* 勋章圆形：多层金色边框 + 翠绿径向底 + 古藤装饰 */
+body.theme-miracle .medal-circle {
+  width: 72px !important;
+  height: 72px !important;
+  border-radius: 50% !important;
+  position: relative !important;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.12) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, #1a3a2a 0%, #0d2818 50%, #081a10 100%) !important;
+  border: 3px solid transparent !important;
+  background-clip: padding-box !important;
+  box-shadow:
+    0 0 0 2px #d4a017,
+    0 0 0 4px #8b6914,
+    0 0 0 6px #d4a017,
+    0 0 14px rgba(245,179,1,.4),
+    inset 0 0 12px rgba(245,179,1,.15),
+    0 4px 12px rgba(0,0,0,.4) !important;
+  font-size: 26px !important;
+  overflow: visible !important;
+}
+
+/* 古藤装饰：四角藤蔓（用伪元素） */
+body.theme-miracle .medal-circle::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(16,185,129,.6) 0%, transparent 8%),
+    radial-gradient(circle at 85% 15%, rgba(16,185,129,.6) 0%, transparent 8%),
+    radial-gradient(circle at 15% 85%, rgba(16,185,129,.6) 0%, transparent 8%),
+    radial-gradient(circle at 85% 85%, rgba(16,185,129,.6) 0%, transparent 8%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 符文环：内圈细线 */
+body.theme-miracle .medal-circle::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 1px dashed rgba(245,179,1,.35);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 中心符号：金色发光 */
+body.theme-miracle .medal-inner {
+  color: #f5b301 !important;
+  text-shadow: 0 0 8px rgba(245,179,1,.6), 0 0 16px rgba(245,179,1,.3) !important;
+  position: relative !important;
+  z-index: 2 !important;
+  filter: drop-shadow(0 0 4px rgba(245,179,1,.4));
+}
+
+/* 已获得勋章：更亮金色辉光 + 翠绿底 */
+body.theme-miracle .medal-item.earned .medal-circle {
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.18) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, #1f4a30 0%, #123320 50%, #0a2015 100%) !important;
+  box-shadow:
+    0 0 0 2px #f5b301,
+    0 0 0 4px #8b6914,
+    0 0 0 6px #f5b301,
+    0 0 20px rgba(245,179,1,.6),
+    0 0 35px rgba(245,179,1,.3),
+    inset 0 0 15px rgba(245,179,1,.2),
+    0 4px 12px rgba(0,0,0,.4) !important;
+}
+body.theme-miracle .medal-item.earned .medal-inner {
+  color: #ffd700 !important;
+  text-shadow: 0 0 10px rgba(255,215,0,.8), 0 0 20px rgba(245,179,1,.5) !important;
+}
+
+/* 未获得勋章：灰度 + 暗淡 */
+body.theme-miracle .medal-item.locked .medal-circle {
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.06) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, #1a2530 0%, #0f1a24 50%, #081018 100%) !important;
+  box-shadow:
+    0 0 0 2px #4a5568,
+    0 0 0 4px #2d3748,
+    0 0 0 6px #4a5568,
+    0 0 8px rgba(0,0,0,.3),
+    inset 0 0 8px rgba(0,0,0,.3) !important;
+  opacity: .7;
+}
+body.theme-miracle .medal-item.locked .medal-inner {
+  color: #718096 !important;
+  text-shadow: none !important;
+  filter: none;
+}
+body.theme-miracle .medal-item.locked .medal-circle::before {
+  background:
+    radial-gradient(circle at 15% 15%, rgba(100,116,139,.4) 0%, transparent 8%),
+    radial-gradient(circle at 85% 15%, rgba(100,116,139,.4) 0%, transparent 8%),
+    radial-gradient(circle at 15% 85%, rgba(100,116,139,.4) 0%, transparent 8%),
+    radial-gradient(circle at 85% 85%, rgba(100,116,139,.4) 0%, transparent 8%);
+}
+body.theme-miracle .medal-item.locked .medal-circle::after {
+  border-color: rgba(100,116,139,.25);
+}
+
+/* 特殊放大勋章 */
+body.theme-miracle .medal-large .medal-circle {
+  width: 100px !important;
+  height: 100px !important;
+  font-size: 36px !important;
+  box-shadow:
+    0 0 0 3px #f5b301,
+    0 0 0 5px #8b6914,
+    0 0 0 7px #f5b301,
+    0 0 25px rgba(245,179,1,.5),
+    0 0 45px rgba(245,179,1,.25),
+    inset 0 0 18px rgba(245,179,1,.2),
+    0 6px 16px rgba(0,0,0,.5) !important;
+}
+
+/* 勋章文字 */
+body.theme-miracle .medal-label {
+  color: #e8e4d4 !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.8) !important;
+  margin-top: 8px !important;
+}
+body.theme-miracle .medal-sub {
+  color: rgba(245,179,1,.7) !important;
+  font-size: 10px !important;
+}
+body.theme-miracle .medal-stars {
+  font-size: 12px !important;
+  letter-spacing: 2px !important;
+  text-shadow: 0 0 6px currentColor !important;
+}
+
+/* 证书区 */
+body.theme-miracle .cert-slot {
+  background: rgba(245,179,1,.05) !important;
+  border: 2px dashed rgba(245,179,1,.4) !important;
+  border-radius: 12px !important;
+}
+body.theme-miracle .cert-name { color: #f5b301 !important; }
+body.theme-miracle .cert-status { color: rgba(245,179,1,.6) !important; }
+
+/* 数据概览统计卡片 */
+body.theme-miracle .stat {
+  background: rgba(15,30,55,.7) !important;
+  border: 1px solid rgba(245,179,1,.25) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,.3), inset 0 1px 0 rgba(245,179,1,.1) !important;
+  backdrop-filter: blur(6px);
+}
+body.theme-miracle .stat .n { color: #f5b301 !important; text-shadow: 0 0 8px rgba(245,179,1,.4); }
+body.theme-miracle .stat .l { color: rgba(232,228,212,.8) !important; }
+
+/* 风格组选择器按钮 */
+body.theme-miracle .sg-btn {
+  background: rgba(15,30,55,.6) !important;
+  border: 1px solid rgba(245,179,1,.3) !important;
+  color: rgba(232,228,212,.7) !important;
+}
+body.theme-miracle .sg-btn:hover {
+  border-color: #f5b301 !important;
+  color: #f5b301 !important;
+}
+body.theme-miracle .sg-btn.active {
+  background: linear-gradient(135deg, #f5b301, #d4a017) !important;
+  color: #0a1628 !important;
+  border-color: #f5b301 !important;
+  box-shadow: 0 0 12px rgba(245,179,1,.4) !important;
+  font-weight: 700;
+}
+
+/* 表格神迹风 */
+body.theme-miracle table.data th {
+  background: rgba(245,179,1,.1) !important;
+  color: #f5b301 !important;
+  border-bottom: 2px solid rgba(245,179,1,.3) !important;
+}
+body.theme-miracle table.data td {
+  color: #e8e4d4 !important;
+  border-bottom: 1px solid rgba(245,179,1,.1) !important;
+}
+body.theme-miracle table.data tr:hover td {
+  background: rgba(245,179,1,.06) !important;
+}
+
+/* 按钮神迹风 */
+body.theme-miracle .btn-primary {
+  background: linear-gradient(135deg, #f5b301, #d4a017) !important;
+  color: #0a1628 !important;
+  border: none !important;
+  box-shadow: 0 2px 10px rgba(245,179,1,.3) !important;
+  font-weight: 600;
+}
+body.theme-miracle .btn-primary:hover {
+  box-shadow: 0 4px 16px rgba(245,179,1,.5) !important;
+  transform: translateY(-1px);
+}
+body.theme-miracle .btn-sm {
+  background: rgba(15,30,55,.6) !important;
+  border: 1px solid rgba(245,179,1,.3) !important;
+  color: rgba(232,228,212,.8) !important;
+}
+body.theme-miracle .btn-sm:hover {
+  border-color: #f5b301 !important;
+  color: #f5b301 !important;
+}
+
+/* 输入框神迹风 */
+body.theme-miracle input, body.theme-miracle select, body.theme-miracle textarea {
+  background: rgba(10,22,40,.6) !important;
+  border: 1px solid rgba(245,179,1,.25) !important;
+  color: #e8e4d4 !important;
+}
+body.theme-miracle input:focus, body.theme-miracle select:focus {
+  border-color: #f5b301 !important;
+  box-shadow: 0 0 0 3px rgba(245,179,1,.12) !important;
+  outline: none;
+}
+
+/* 课表神迹风 */
+body.theme-miracle .schedule-cell {
+  background: rgba(15,30,55,.6) !important;
+  border: 1px solid rgba(245,179,1,.15) !important;
+}
+body.theme-miracle .course-block {
+  background: linear-gradient(135deg, rgba(245,179,1,.2), rgba(16,185,129,.15)) !important;
+  border-left: 3px solid #f5b301 !important;
+  color: #e8e4d4 !important;
+}
+
+/* 全屏模式神迹风 */
+body.theme-miracle .medal-fullscreen {
+  background:
+    linear-gradient(rgba(10,22,40,.92), rgba(10,22,40,.95)),
+    url('bg/achievement.jpg') center/cover no-repeat fixed !important;
+}
+body.theme-miracle .medal-fullscreen .card-head {
+  background: rgba(10,22,40,.9) !important;
+  border-bottom: 1px solid rgba(245,179,1,.2) !important;
+}
